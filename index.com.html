@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استوديو التصميم المعماري</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Firebase: نستخدمه كقاعدة بيانات حية مشتركة بين كل من يفتح الرابط من أي جهاز -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --ink:#15130F;
+  --ink-soft:#221F19;
+  --paper:#F4EFE6;
+  --stone:#8C8577;
+  --stone-light:#C9C0AF;
+  --travertine:#EAE3D6;
+  --travertine-2:#F1ECE1;
+  --bronze:#A9702E;
+  --bronze-dark:#8C5A22;
+  --bronze-light:#E8CDA6;
+}
+*{box-sizing:border-box;}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--travertine);color:var(--ink);}
+.font-display{font-family:'Tajawal',sans-serif; font-weight:700;}
+.font-num{font-family:'IBM Plex Mono',monospace;}
+.bg-ink{background-color:var(--ink);}
+.bg-ink-soft{background-color:var(--ink-soft);}
+.bg-paper{background-color:var(--paper);}
+.bg-travertine{background-color:var(--travertine);}
+.bg-travertine-2{background-color:var(--travertine-2);}
+.text-bronze{color:var(--bronze);}
+.bg-bronze{background-color:var(--bronze);}
+.bg-bronze:hover{background-color:var(--bronze-dark);}
+.text-stone{color:var(--stone);}
+.text-stone-light{color:var(--stone-light);}
+.border-hairline{border-color:rgba(21,19,15,0.14);}
+.border-hairline-light{border-color:rgba(244,239,230,0.16);}
+.blueprint-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--stone-light) 1px, transparent 1px), linear-gradient(90deg, var(--stone-light) 1px, transparent 1px);
+  background-size:44px 44px;
+  opacity:.06;
+}
+.blueprint-grid.on-ink{background-image:linear-gradient(#E8CDA6 1px, transparent 1px), linear-gradient(90deg, #E8CDA6 1px, transparent 1px); opacity:.07;}
+.dim-line{
+  height:1px;
+  background:repeating-linear-gradient(90deg, var(--stone) 0 6px, transparent 6px 12px);
+}
+.tag-chip{border:1px solid rgba(21,19,15,0.18);}
+.notif-badge{background:#DC2626;color:#fff;font-size:10px;line-height:1;min-width:18px;height:18px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;font-weight:700;}
+.card-lift{transition:transform .35s ease, box-shadow .35s ease, border-color .35s ease;}
+.card-lift:hover{transform:translateY(-4px); border-color:var(--bronze); box-shadow:0 18px 40px -20px rgba(21,19,15,0.35);}
+.fade-in{animation:fadeIn .6s ease both;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+.scrollbar-thin::-webkit-scrollbar{width:6px;height:6px;}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:var(--stone-light); border-radius:99px;}
+input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var(--bronze-light);}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- شاشة تحميل أولية -->
+<div id="splash" class="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center gap-4 text-paper">
+  <i class="fa-solid fa-drafting-compass text-4xl text-bronze animate-spin" style="animation-duration:2.4s"></i>
+  <p class="text-xs text-stone-light font-num tracking-widest">جارِ تحميل البيانات...</p>
+</div>
+
+<!-- ======================= الموقع العام ======================= -->
+<div id="public-site" class="hidden">
+
+  <!-- شريط التنقل -->
+  <header class="sticky top-0 z-40 bg-travertine/90 backdrop-blur border-b border-hairline">
+    <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded bg-ink text-bronze flex items-center justify-center">
+          <i class="fa-solid fa-compass-drafting text-sm"></i>
+        </div>
+        <span class="font-display text-lg" data-term="site_name">مكتب الخط الهندسي للتصميم المعماري</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="#home" data-term="nav_home" class="hover:text-bronze transition">الرئيسية</a>
+        <a href="#services" data-term="nav_services" class="hover:text-bronze transition">خدماتنا</a>
+        <a href="#about" data-term="nav_about" class="hover:text-bronze transition">من نحن</a>
+        <a href="#contact" data-term="nav_contact" class="hover:text-bronze transition">تواصل معنا</a>
+      </nav>
+      <button onclick="openLogin()" class="text-xs font-bold border border-hairline px-4 py-2 rounded-full hover:bg-ink hover:text-paper hover:border-ink transition flex items-center gap-2">
+        <i class="fa-regular fa-user"></i>
+        <span data-term="staff_login_label">دخول الموظفين</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- الواجهة الرئيسية -->
+  <section id="home" class="relative bg-ink text-paper overflow-hidden">
+    <div class="blueprint-grid on-ink"></div>
+    <div class="max-w-6xl mx-auto px-5 pt-20 pb-16 relative">
+      <p class="text-bronze font-num text-xs tracking-[0.3em] mb-4" data-term="hero_eyebrow">استوديو تصميم معماري</p>
+      <h1 class="font-display text-4xl md:text-6xl leading-[1.15] max-w-3xl" data-term="hero_title">نصمم الفراغ قبل أن يُبنى</h1>
+      <p class="text-stone-light mt-6 max-w-xl leading-relaxed" data-term="hero_subtitle">من المخطط الأول حتى آخر تفصيلة في الواجهة، نرافقك في رحلة تصميم داخلي وخارجي متكاملة</p>
+      <div class="flex flex-wrap gap-3 mt-8">
+        <a href="#services" class="inline-flex items-center gap-2 bg-bronze text-ink font-bold text-sm px-6 py-3 rounded-full transition">
+          <span data-term="hero_cta">استعرض خدماتنا</span>
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+        </a>
+        <button onclick="openRequestModal()" class="inline-flex items-center gap-2 border border-hairline-light text-paper font-bold text-sm px-6 py-3 rounded-full hover:bg-white/10 transition">
+          <i class="fa-regular fa-paper-plane"></i>
+          <span data-term="hero_secondary_cta">اطلب استشارة الآن</span>
+        </button>
+      </div>
+    </div>
+    <!-- رسم خطي (توقيع تصميم): واجهة مبنى بخطوط مخططية -->
+    <svg viewBox="0 0 900 220" class="w-full h-40 md:h-56 relative" preserveAspectRatio="none">
+      <line x1="0" y1="210" x2="900" y2="210" stroke="#E8CDA6" stroke-opacity="0.5" stroke-width="1"/>
+      <g stroke="#E8CDA6" stroke-opacity="0.55" fill="none" stroke-width="1.4">
+        <rect x="60" y="60" width="180" height="150"/>
+        <rect x="260" y="20" width="140" height="190"/>
+        <rect x="420" y="90" width="220" height="120"/>
+        <rect x="660" y="45" width="160" height="165"/>
+      </g>
+      <g stroke="#E8CDA6" stroke-opacity="0.35" fill="none" stroke-width="1">
+        <line x1="60" y1="90" x2="240" y2="90"/><line x1="60" y1="120" x2="240" y2="120"/><line x1="60" y1="150" x2="240" y2="150"/><line x1="60" y1="180" x2="240" y2="180"/>
+        <line x1="100" y1="60" x2="100" y2="210"/><line x1="140" y1="60" x2="140" y2="210"/><line x1="180" y1="60" x2="180" y2="210"/>
+        <line x1="260" y1="55" x2="400" y2="55"/><line x1="260" y1="90" x2="400" y2="90"/><line x1="260" y1="125" x2="400" y2="125"/><line x1="260" y1="160" x2="400" y2="160"/>
+        <line x1="450" y1="90" x2="450" y2="210"/><line x1="500" y1="90" x2="500" y2="210"/><line x1="550" y1="90" x2="550" y2="210"/><line x1="600" y1="90" x2="600" y2="210"/>
+        <line x1="660" y1="80" x2="820" y2="80"/><line x1="660" y1="115" x2="820" y2="115"/><line x1="660" y1="150" x2="820" y2="150"/><line x1="660" y1="185" x2="820" y2="185"/>
+      </g>
+    </svg>
+  </section>
+
+  <div class="dim-line"></div>
+
+  <!-- من نحن -->
+  <section id="about" class="max-w-6xl mx-auto px-5 py-20 grid md:grid-cols-5 gap-10 items-center">
+    <div class="md:col-span-2">
+      <p class="text-bronze font-num text-xs tracking-[0.3em] mb-3" data-term="about_eyebrow">من نحن</p>
+      <h2 class="font-display text-3xl leading-snug" data-term="about_title">خبرة هندسية، ولمسة فنية</h2>
+    </div>
+    <div class="md:col-span-3 border-r-2 border-bronze pr-6 md:pr-8">
+      <p class="text-stone leading-loose" data-term="about_text">فريقنا من المهندسين والمصممين يجمع بين الدقة الإنشائية والحس الجمالي، لنقدّم حلولاً معمارية تلائم طبيعة كل مشروع ومساحته وميزانيته.</p>
+    </div>
+  </section>
+
+  <!-- الخدمات -->
+  <section id="services" class="bg-travertine-2 border-y border-hairline">
+    <div class="max-w-6xl mx-auto px-5 py-20">
+      <div class="text-center max-w-xl mx-auto mb-10">
+        <p class="text-bronze font-num text-xs tracking-[0.3em] mb-3" data-term="services_eyebrow">خدماتنا</p>
+        <h2 class="font-display text-3xl mb-3" data-term="services_title">مجالات التصميم</h2>
+        <p class="text-stone text-sm" data-term="services_subtitle">اختر التصنيف لاستعراض الخدمات المتعلقة به</p>
+      </div>
+      <div id="category-filters" class="flex flex-wrap justify-center gap-2.5 mb-10"></div>
+      <div id="services-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
+  </section>
+
+  <!-- تواصل معنا -->
+  <section id="contact" class="max-w-6xl mx-auto px-5 py-20">
+    <div class="text-center max-w-xl mx-auto mb-10">
+      <p class="text-bronze font-num text-xs tracking-[0.3em] mb-3" data-term="contact_eyebrow">تواصل معنا</p>
+      <h2 class="font-display text-3xl mb-3" data-term="contact_title">لنبدأ مشروعك القادم</h2>
+      <p class="text-stone text-sm" data-term="contact_subtitle">راسلنا أو تواصل معنا مباشرة عبر الوسائل التالية</p>
+      <button onclick="openRequestModal()" class="inline-flex items-center gap-2 bg-ink text-paper font-bold text-sm px-6 py-3 rounded-full mt-6 hover:bg-ink-soft transition">
+        <i class="fa-regular fa-paper-plane"></i>
+        <span data-term="contact_request_btn">أرسل طلبك الآن</span>
+      </button>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-5">
+      <div class="border border-hairline rounded-xl p-6 text-center bg-white/40">
+        <i class="fa-solid fa-phone text-bronze mb-3"></i>
+        <p class="text-xs text-stone mb-1" data-term="contact_phone_label">الهاتف</p>
+        <p class="font-num text-sm" data-term="contact_phone_value">+968 9xxxxxxx</p>
+      </div>
+      <div class="border border-hairline rounded-xl p-6 text-center bg-white/40">
+        <i class="fa-solid fa-envelope text-bronze mb-3"></i>
+        <p class="text-xs text-stone mb-1" data-term="contact_email_label">البريد الإلكتروني</p>
+        <p class="font-num text-sm" data-term="contact_email_value">info@example.com</p>
+      </div>
+      <div class="border border-hairline rounded-xl p-6 text-center bg-white/40">
+        <i class="fa-solid fa-location-dot text-bronze mb-3"></i>
+        <p class="text-xs text-stone mb-1" data-term="contact_address_label">العنوان</p>
+        <p class="text-sm" data-term="contact_address_value">مسقط، سلطنة عُمان</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-ink text-stone-light">
+    <div class="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <span data-term="site_name">مكتب الخط الهندسي للتصميم المعماري</span>
+      <span><span data-term="footer_text">جميع الحقوق محفوظة</span> © <span id="footer-year"></span></span>
+    </div>
+  </footer>
+</div>
+
+<!-- ======================= نافذة تسجيل الدخول ======================= -->
+<div id="login-modal" onclick="if(event.target===this) closeLogin()" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-paper rounded-2xl shadow-2xl w-full max-w-sm p-8 relative fade-in">
+    <button onclick="closeLogin()" class="absolute top-4 left-4 text-stone hover:text-ink"><i class="fa-solid fa-xmark"></i></button>
+    <div class="w-14 h-14 rounded-xl bg-ink text-bronze flex items-center justify-center mx-auto mb-4">
+      <i class="fa-solid fa-user-lock"></i>
+    </div>
+    <h3 class="font-display text-xl text-center mb-1">دخول الموظفين</h3>
+    <p class="text-xs text-stone text-center mb-6">لوحة التحكم مخصصة لموظفي الاستوديو ومدير النظام</p>
+    <form onsubmit="handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم المستخدم</label>
+        <input id="login-username" type="text" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 bg-white">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">كلمة المرور</label>
+        <input id="login-password" type="password" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 bg-white">
+      </div>
+      <p id="login-error" class="text-xs text-red-600 hidden"></p>
+      <button type="submit" class="w-full bg-bronze text-ink font-bold text-sm py-3 rounded-lg transition">تسجيل الدخول</button>
+    </form>
+    <p class="text-[11px] text-stone text-center mt-5 leading-relaxed">للتجربة: <span class="font-num">admin / admin123</span> (مدير النظام)</p>
+  </div>
+</div>
+
+<!-- ======================= لوحة التحكم ======================= -->
+<div id="dashboard" class="hidden min-h-screen bg-travertine-2">
+  <div class="flex min-h-screen">
+    <!-- الشريط الجانبي -->
+    <aside class="w-64 bg-ink text-paper flex-shrink-0 flex flex-col">
+      <div class="p-5 border-b border-hairline-light">
+        <div class="flex items-center gap-2.5 mb-1">
+          <i class="fa-solid fa-compass-drafting text-bronze"></i>
+          <span class="font-display text-sm" data-term="dash_title">لوحة التحكم</span>
+        </div>
+        <p class="text-[11px] text-stone-light truncate" data-term="site_name">مكتب الخط الهندسي للتصميم المعماري</p>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm" id="dash-nav"></nav>
+      <div class="p-4 border-t border-hairline-light">
+        <div class="flex items-center gap-2.5 mb-3">
+          <div class="w-9 h-9 rounded-full bg-bronze text-ink flex items-center justify-center font-bold" id="profile-initial">م</div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold truncate" id="profile-name">—</p>
+            <p class="text-[10px] text-stone-light truncate" id="profile-role">—</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openSelfPasswordModal()" class="flex-1 text-[11px] border border-hairline-light rounded-lg py-2 hover:bg-white/10 transition">
+            <i class="fa-solid fa-key"></i> كلمة المرور
+          </button>
+          <button onclick="logout()" class="flex-1 text-[11px] border border-hairline-light rounded-lg py-2 hover:bg-white/10 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> <span data-term="btn_logout">خروج</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- محتوى اللوحة -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="#" onclick="backToSite(event)" class="text-xs text-stone hover:text-bronze"><i class="fa-solid fa-arrow-left"></i> عرض الموقع العام</a>
+          <h1 class="font-display text-2xl mt-1" id="dash-section-title">نظرة عامة</h1>
+        </div>
+        <button onclick="logout()" class="text-xs font-bold border border-hairline px-4 py-2.5 rounded-full hover:bg-ink hover:text-paper hover:border-ink transition flex items-center gap-2">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span data-term="btn_logout">تسجيل الخروج</span>
+        </button>
+      </div>
+      <div id="dash-content"></div>
+    </main>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل خدمة -->
+<div id="service-modal" onclick="if(event.target===this) closeModal('service-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="service-modal-title">إضافة خدمة</h4>
+      <button onclick="closeModal('service-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveService(event)" class="p-6 space-y-4">
+      <input type="hidden" id="svc-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم الخدمة</label>
+        <input id="svc-title" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-stone">التصنيف</label>
+            <button type="button" onclick="openCategoryModal()" class="text-bronze-dark hover:underline text-[11px] font-bold"><i class="fa-solid fa-plus"></i> تصنيف جديد</button>
+          </div>
+          <select id="svc-category" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone mb-1.5">الأيقونة</label>
+          <select id="svc-icon" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+            <option value="fa-couch">أثاث / داخلي</option>
+            <option value="fa-briefcase">مكاتب</option>
+            <option value="fa-tree">حدائق</option>
+            <option value="fa-house">مبنى</option>
+            <option value="fa-building">برج / واجهة</option>
+            <option value="fa-landmark">طراز كلاسيكي</option>
+            <option value="fa-drafting-compass">مخططات</option>
+            <option value="fa-ruler-combined">قياسات وتراخيص</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">الوصف</label>
+        <textarea id="svc-desc" rows="3" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
+      </div>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" id="svc-active" checked class="w-4 h-4">
+        عرض الخدمة في الموقع العام
+      </label>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ الخدمة</button>
+        <button type="button" onclick="closeModal('service-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل موظف -->
+<div id="employee-modal" onclick="if(event.target===this) closeModal('employee-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="employee-modal-title">إضافة موظف</h4>
+      <button onclick="closeModal('employee-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveEmployee(event)" class="p-6 space-y-4">
+      <input type="hidden" id="emp-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">الاسم الكامل</label>
+        <input id="emp-name" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">المسمى الوظيفي</label>
+        <input id="emp-jobtitle" placeholder="مثال: مصمم داخلي" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-stone mb-1.5">اسم المستخدم</label>
+          <input id="emp-username" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone mb-1.5">الصلاحية</label>
+          <select id="emp-role" onchange="toggleEmpPermFields()" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+            <option value="employee">موظف</option>
+            <option value="admin">مدير النظام</option>
+          </select>
+        </div>
+      </div>
+      <div id="emp-password-field">
+        <label class="block text-xs font-bold text-stone mb-1.5">كلمة المرور</label>
+        <input id="emp-password" type="text" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        <p class="text-[11px] text-stone mt-1">اتركها فارغة عند التعديل إن لم ترغب بتغييرها</p>
+      </div>
+      <div id="emp-permissions-field" class="border border-hairline rounded-lg p-3.5 bg-travertine-2/60">
+        <p class="text-xs font-bold text-stone mb-2.5"><i class="fa-solid fa-shield-halved ml-1 text-bronze"></i> صلاحيات الوصول</p>
+        <label class="flex items-center gap-2 text-sm mb-2">
+          <input id="emp-perm-requests" type="checkbox" class="w-4 h-4">
+          الوصول إلى الطلبات
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input id="emp-perm-finance" type="checkbox" class="w-4 h-4">
+          الوصول إلى الإدارة المالية
+        </label>
+        <div id="emp-perm-custom-list"></div>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ الموظف</button>
+        <button type="button" onclick="closeModal('employee-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة تغيير كلمة مرور موظف (من قبل مدير النظام) -->
+<div id="password-modal" onclick="if(event.target===this) closeModal('password-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg">تغيير كلمة المرور</h4>
+      <button onclick="closeModal('password-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="savePassword(event)" class="p-6 space-y-4">
+      <input type="hidden" id="pwd-emp-id">
+      <p class="text-sm">تعيين كلمة مرور جديدة لـ: <b id="pwd-emp-name"></b></p>
+      <input id="pwd-new" type="text" required minlength="4" placeholder="كلمة المرور الجديدة" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+      <button type="submit" class="w-full bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ كلمة المرور</button>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل قيد مالي -->
+<div id="finance-modal" onclick="if(event.target===this) closeModal('finance-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="finance-modal-title">إضافة قيد مالي</h4>
+      <button onclick="closeModal('finance-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveFinanceEntry(event)" class="p-6 space-y-4">
+      <input type="hidden" id="fin-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">البيان / اسم المشروع</label>
+        <input id="fin-title" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-stone mb-1.5">التكلفة (المصروف)</label>
+          <input id="fin-cost" type="number" step="0.01" min="0" required value="0" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone mb-1.5">المبلغ المدفوع (الدخل)</label>
+          <input id="fin-paid" type="number" step="0.01" min="0" required value="0" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">ملاحظات (اختياري)</label>
+        <textarea id="fin-notes" rows="2" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ القيد</button>
+        <button type="button" onclick="closeModal('finance-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل قسم مخصص في القائمة الجانبية -->
+<div id="custom-section-modal" onclick="if(event.target===this) closeModal('custom-section-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="custom-section-modal-title">إضافة قسم جديد</h4>
+      <button onclick="closeModal('custom-section-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveCustomSection(event)" class="p-6 space-y-4">
+      <input type="hidden" id="cs-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم القسم (يظهر في القائمة الجانبية)</label>
+        <input id="cs-title" required placeholder="مثال: أرشيف المشاريع" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">أيقونة (اسم أيقونة Font Awesome)</label>
+        <input id="cs-icon" placeholder="fa-folder" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        <p class="text-[11px] text-stone mt-1">مثال: fa-folder، fa-images، fa-file-lines، fa-clipboard-list</p>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ القسم</button>
+        <button type="button" onclick="closeModal('custom-section-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل تصنيف خدمة (يظهر كمساحة مستقلة في الطلبات) -->
+<div id="category-modal" onclick="if(event.target===this) closeModal('category-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="category-modal-title">إضافة تصنيف جديد</h4>
+      <button onclick="closeModal('category-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveCategory(event)" class="p-6 space-y-4">
+      <input type="hidden" id="cat-key">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم التصنيف (يظهر للزوار وفي مساحته الخاصة بالطلبات)</label>
+        <input id="cat-label" required placeholder="مثال: تصميم المطابخ" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ التصنيف</button>
+        <button type="button" onclick="closeModal('category-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="self-password-modal" onclick="if(event.target===this) closeModal('self-password-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg">تغيير كلمة مروري</h4>
+      <button onclick="closeModal('self-password-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveSelfPassword(event)" class="p-6 space-y-4">
+      <input id="self-pwd-current" type="password" required placeholder="كلمة المرور الحالية" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      <input id="self-pwd-new" type="password" required minlength="4" placeholder="كلمة المرور الجديدة" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      <p id="self-pwd-error" class="text-xs text-red-600 hidden"></p>
+      <button type="submit" class="w-full bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ</button>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة تقديم طلب جديد (للزوار) -->
+<div id="request-modal" onclick="if(event.target===this) closeModal('request-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" data-term="request_modal_title">أرسل طلبك</h4>
+      <button onclick="closeModal('request-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="submitRequest(event)" class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_name_label">الاسم</label>
+        <input id="req-name" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_phone_label">رقم الهاتف</label>
+        <input id="req-phone" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_category_label">الخدمة المطلوبة</label>
+        <select id="req-category" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_message_label">تفاصيل الطلب</label>
+        <textarea id="req-message" rows="3" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
+      </div>
+      <button type="submit" class="w-full bg-bronze text-ink font-bold text-sm py-3 rounded-lg">
+        <span data-term="request_submit_btn">إرسال الطلب</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- تنبيهات -->
+<div id="toast-container" class="fixed bottom-5 left-5 z-[70] space-y-2"></div>
+
+<script>
+// ---------- الاتصال بقاعدة بيانات Firebase (مشتركة بين كل من يفتح الرابط) ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDsE5EmLVydIzllLiCdUwYJ6V6xzhmFl0g",
+  authDomain: "eng1-12f09.firebaseapp.com",
+  databaseURL: "https://eng1-12f09-default-rtdb.firebaseio.com",
+  projectId: "eng1-12f09",
+  storageBucket: "eng1-12f09.firebasestorage.app",
+  messagingSenderId: "717259052265",
+  appId: "1:717259052265:web:22fc7a821f7d432a3b0c78"
+};
+firebase.initializeApp(firebaseConfig);
+const dataRef = firebase.database().ref('studio-site-data');
+
+// التصنيفات أصبحت ديناميكية: يمكن لمدير النظام إضافة تصنيف جديد من تبويب "إدارة الخدمات"
+// وسيظهر تلقائياً كخيار عند إضافة خدمة، وكمساحة مستقلة في تبويب "الطلبات"
+const DEFAULT_CATEGORIES = [
+  {key:'interior', label:"تصميم داخلي"},
+  {key:'exterior', label:"تصميم خارجي"},
+  {key:'facade', label:"واجهات"},
+  {key:'plans', label:"مخططات هندسية"}
+];
+
+const DEFAULT_TERMS = {
+  site_name: "مكتب الخط الهندسي للتصميم المعماري",
+  nav_home: "الرئيسية", nav_services: "خدماتنا", nav_about: "من نحن", nav_contact: "تواصل معنا",
+  staff_login_label: "دخول الموظفين",
+  hero_eyebrow: "استوديو تصميم معماري",
+  hero_title: "نصمم الفراغ قبل أن يُبنى",
+  hero_subtitle: "من المخطط الأول حتى آخر تفصيلة في الواجهة، نرافقك في رحلة تصميم داخلي وخارجي متكاملة",
+  hero_cta: "استعرض خدماتنا",
+  hero_secondary_cta: "اطلب استشارة الآن",
+  contact_request_btn: "أرسل طلبك الآن",
+  service_request_btn: "اطلب هذه الخدمة",
+  request_modal_title: "أرسل طلبك",
+  request_name_label: "الاسم",
+  request_phone_label: "رقم الهاتف",
+  request_category_label: "الخدمة المطلوبة",
+  request_message_label: "تفاصيل الطلب",
+  request_submit_btn: "إرسال الطلب",
+  tab_requests: "الطلبات",
+  about_eyebrow: "من نحن",
+  about_title: "خبرة هندسية، ولمسة فنية",
+  about_text: "فريقنا من المهندسين والمصممين يجمع بين الدقة الإنشائية والحس الجمالي، لنقدّم حلولاً معمارية تلائم طبيعة كل مشروع ومساحته وميزانيته.",
+  services_eyebrow: "خدماتنا",
+  services_title: "مجالات التصميم",
+  services_subtitle: "اختر التصنيف لاستعراض الخدمات المتعلقة به",
+  cat_all: "الكل", cat_interior: "تصميم داخلي", cat_exterior: "تصميم خارجي", cat_facade: "واجهات", cat_plans: "مخططات هندسية",
+  contact_eyebrow: "تواصل معنا",
+  contact_title: "لنبدأ مشروعك القادم",
+  contact_subtitle: "راسلنا أو تواصل معنا مباشرة عبر الوسائل التالية",
+  contact_phone_label: "الهاتف", contact_phone_value: "+968 9xxxxxxx",
+  contact_email_label: "البريد الإلكتروني", contact_email_value: "info@example.com",
+  contact_address_label: "العنوان", contact_address_value: "مسقط، سلطنة عُمان",
+  footer_text: "جميع الحقوق محفوظة",
+  dash_title: "لوحة التحكم",
+  tab_overview: "نظرة عامة", tab_services: "إدارة الخدمات", tab_employees: "الموظفون والصلاحيات", tab_labels: "تعديل المسميات", tab_finance: "الإدارة المالية", tab_sections: "أقسام إضافية",
+  btn_logout: "خروج"
+};
+
+const DEFAULT_SERVICES = [
+  {id:1, title:"تصميم الشقق السكنية", category:"interior", icon:"fa-couch", desc:"تصميم داخلي متكامل للشقق يراعي الاستخدام الأمثل للمساحة والإضاءة.", active:true},
+  {id:2, title:"تصميم المكاتب والمساحات التجارية", category:"interior", icon:"fa-briefcase", desc:"حلول تصميم داخلي عملية وجذابة للمكاتب والمحلات التجارية.", active:true},
+  {id:3, title:"تصميم الفلل والحدائق", category:"exterior", icon:"fa-tree", desc:"تصميم خارجي شامل للفلل يشمل تنسيق الحدائق والمساحات المحيطة.", active:true},
+  {id:4, title:"التشطيبات الخارجية", category:"exterior", icon:"fa-house", desc:"اختيار مواد وتشطيبات خارجية تناسب المناخ وطبيعة الموقع.", active:true},
+  {id:5, title:"واجهات حديثة", category:"facade", icon:"fa-building", desc:"تصميم واجهات عصرية بخطوط بسيطة ومواد معاصرة.", active:true},
+  {id:6, title:"واجهات كلاسيكية", category:"facade", icon:"fa-landmark", desc:"واجهات بطابع كلاسيكي وتفاصيل زخرفية دقيقة.", active:true},
+  {id:7, title:"المخططات المعمارية", category:"plans", icon:"fa-drafting-compass", desc:"إعداد المخططات المعمارية والإنشائية الكاملة للمشروع.", active:true},
+  {id:8, title:"رخص البناء", category:"plans", icon:"fa-ruler-combined", desc:"متابعة إجراءات التراخيص الهندسية مع الجهات المختصة.", active:true}
+];
+
+const DEFAULT_EMPLOYEES = [
+  {id:1, name:"مدير النظام", jobTitle:"مدير النظام", username:"admin", password:"admin123", role:"admin", active:true, permissions:{requests:true, finance:true}},
+  {id:2, name:"موظف الاستوديو", jobTitle:"مصمم داخلي", username:"employee1", password:"12345", role:"employee", active:true, permissions:{requests:true, finance:false}}
+];
+
+let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], customSections:[] };
+let currentUser = null;
+let activeCategory = 'all';
+let activeDashTab = 'overview';
+let lastSyncedSnapshot = null; // آخر نسخة بيانات تمت مزامنتها مع Firebase (لتفادي إعادة معالجة نفس البيانات مرتين)
+const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal'];
+function isAnyModalOpen(){
+  return SYNC_SENSITIVE_MODAL_IDS.some(id=>{
+    const el = document.getElementById(id);
+    return el && !el.classList.contains('hidden');
+  });
+}
+
+// ---------- تخزين دائم على Firebase ----------
+function mergeSiteData(parsed){
+  parsed = parsed || {};
+  return {
+    terms: {...DEFAULT_TERMS, ...(parsed.terms||{})},
+    services: parsed.services || [...DEFAULT_SERVICES],
+    categories: parsed.categories || [...DEFAULT_CATEGORIES],
+    employees: (parsed.employees || [...DEFAULT_EMPLOYEES]).map(e => ({
+      ...e,
+      permissions: { requests:true, finance:false, ...(e.permissions||{}) }
+    })),
+    requests: parsed.requests || [],
+    finance: parsed.finance || [],
+    customSections: parsed.customSections || []
+  };
+}
+async function loadData(){
+  try{
+    const snapshot = await dataRef.once('value');
+    if(snapshot.exists()){
+      siteData = mergeSiteData(snapshot.val());
+      lastSyncedSnapshot = JSON.stringify(siteData);
+    } else {
+      await saveData();
+    }
+  }catch(e){
+    showToast('تعذّر الاتصال بقاعدة البيانات، تحقق من اتصال الإنترنت', 'error');
+  }
+  // الاستماع الحي: أي تغيير يحصل من أي جهاز يصل هنا فوراً بدون انتظار
+  dataRef.on('value', (snapshot) => {
+    if(isAnyModalOpen()) return; // لا نستبدل البيانات أثناء تعبئة المستخدم لنموذج مفتوح
+    applyIncomingData(snapshot.val());
+  });
+}
+async function saveData(){
+  try{
+    lastSyncedSnapshot = JSON.stringify(siteData); // لتفادي إعادة معالجة تعديلنا الخاص عند وصوله عبر الاستماع الحي
+    await dataRef.set(siteData);
+  }catch(e){
+    showToast('تعذّر حفظ البيانات، تحقق من اتصال الإنترنت', 'error');
+  }
+}
+
+
+// ---------- أدوات مساعدة ----------
+function showToast(msg, type='success'){
+  const el = document.createElement('div');
+  el.className = `fade-in px-4 py-3 rounded-lg shadow-lg text-sm text-white ${type==='error' ? 'bg-red-600' : 'bg-ink'}`;
+  el.innerHTML = `<i class="fa-solid ${type==='error'?'fa-triangle-exclamation':'fa-circle-check'} ml-2"></i>${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 3200);
+}
+function closeModal(id){
+  document.getElementById(id).classList.add('hidden');
+  document.getElementById(id).classList.remove('flex');
+  syncLatestData(); // نتحقق فوراً من وجود تحديثات وصلت من جهاز آخر أثناء فتح هذه النافذة
+}
+function openModal(id){ document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function catLabel(key){
+  const cat = siteData.categories.find(c=>c.key===key);
+  if(cat) return cat.label;
+  return siteData.terms['cat_'+key] || key; // توافق مع بيانات قديمة محفوظة قبل هذا التحديث
+}
+// مدير النظام يملك كل الصلاحيات تلقائياً، وما دون ذلك يعتمد على الصلاحيات المحددة له
+function hasPermission(emp, key){ return !!emp && (emp.role==='admin' || !!(emp.permissions && emp.permissions[key])); }
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent = str||''; return d.innerHTML; }
+
+// ---------- تطبيق النصوص/المسميات ----------
+function applyTerms(){
+  document.querySelectorAll('[data-term]').forEach(el=>{
+    const key = el.dataset.term;
+    if(siteData.terms[key] !== undefined) el.textContent = siteData.terms[key];
+  });
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+}
+
+// ---------- عرض الموقع العام ----------
+function renderCategoryFilters(){
+  const wrap = document.getElementById('category-filters');
+  const cats = [{key:'all', label:siteData.terms.cat_all}, ...siteData.categories.map(c=>({key:c.key, label:c.label}))];
+  wrap.innerHTML = cats.map(c => `
+    <button onclick="setCategory('${c.key}')" class="tag-chip px-4 py-1.5 rounded-full text-xs font-bold transition ${activeCategory===c.key ? 'bg-ink text-paper border-ink' : 'bg-white/60 hover:bg-white'}">
+      ${c.label}
+    </button>`).join('');
+}
+function setCategory(key){ activeCategory = key; renderCategoryFilters(); renderServicesGrid(); }
+function renderServicesGrid(){
+  const grid = document.getElementById('services-grid');
+  const items = siteData.services.filter(s => s.active && (activeCategory==='all' || s.category===activeCategory));
+  if(items.length===0){
+    grid.innerHTML = `<p class="col-span-full text-center text-stone text-sm py-10">لا توجد خدمات في هذا التصنيف حالياً</p>`;
+    return;
+  }
+  grid.innerHTML = items.map(s => `
+    <div class="card-lift border border-hairline rounded-xl p-6 bg-white/60">
+      <div class="w-11 h-11 rounded-lg bg-ink text-bronze flex items-center justify-center mb-4">
+        <i class="fa-solid ${s.icon}"></i>
+      </div>
+      <span class="tag-chip inline-block text-[10px] font-bold px-2.5 py-1 rounded-full text-stone mb-2">${catLabel(s.category)}</span>
+      <h3 class="font-display text-lg mb-2">${s.title}</h3>
+      <p class="text-sm text-stone leading-relaxed mb-4">${s.desc}</p>
+      <button onclick="openRequestModal('${s.category}')" class="text-xs font-bold text-bronze-dark hover:underline">
+        <span data-term="service_request_btn">اطلب هذه الخدمة</span> <i class="fa-solid fa-arrow-left text-[10px]"></i>
+      </button>
+    </div>`).join('');
+}
+function renderPublicSite(){ applyTerms(); renderCategoryFilters(); renderServicesGrid(); }
+
+function openRequestModal(prefillCategory){
+  const select = document.getElementById('req-category');
+  select.innerHTML = siteData.categories.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
+  if(prefillCategory) select.value = prefillCategory;
+  document.getElementById('req-name').value = '';
+  document.getElementById('req-phone').value = '';
+  document.getElementById('req-message').value = '';
+  openModal('request-modal');
+}
+async function submitRequest(e){
+  e.preventDefault();
+  const newId = siteData.requests.length ? Math.max(...siteData.requests.map(r=>r.id))+1 : 1;
+  const now = new Date();
+  const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0')+" "+String(now.getHours()).padStart(2,'0')+":"+String(now.getMinutes()).padStart(2,'0');
+  siteData.requests.push({
+    id: newId,
+    name: document.getElementById('req-name').value.trim(),
+    phone: document.getElementById('req-phone').value.trim(),
+    category: document.getElementById('req-category').value,
+    message: document.getElementById('req-message').value.trim(),
+    date: dateStr,
+    status: 'قيد المراجعة',
+    seen: false
+  });
+  await saveData();
+  closeModal('request-modal');
+  showToast('تم إرسال طلبك بنجاح، سنتواصل معك قريباً');
+  if(currentUser) renderDashNav();
+}
+
+// ---------- تسجيل الدخول ----------
+function openLogin(){ document.getElementById('login-error').classList.add('hidden'); openModal('login-modal'); }
+function closeLogin(){ closeModal('login-modal'); }
+function handleLogin(e){
+  e.preventDefault();
+  const u = document.getElementById('login-username').value.trim();
+  const p = document.getElementById('login-password').value;
+  const emp = siteData.employees.find(x => x.username === u && x.password === p);
+  const errEl = document.getElementById('login-error');
+  if(!emp){ errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة'; errEl.classList.remove('hidden'); return; }
+  if(!emp.active){ errEl.textContent = 'هذا الحساب موقوف حالياً، راجع مدير النظام'; errEl.classList.remove('hidden'); return; }
+  currentUser = emp;
+  closeLogin();
+  document.getElementById('login-username').value=''; document.getElementById('login-password').value='';
+  showDashboard();
+}
+function logout(){ currentUser=null; document.getElementById('dashboard').classList.add('hidden'); document.getElementById('public-site').classList.remove('hidden'); }
+function backToSite(e){ e.preventDefault(); document.getElementById('dashboard').classList.add('hidden'); document.getElementById('public-site').classList.remove('hidden'); }
+
+// ---------- لوحة التحكم ----------
+function showDashboard(){
+  document.getElementById('public-site').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('profile-name').textContent = currentUser.name;
+  document.getElementById('profile-role').textContent = currentUser.jobTitle || (currentUser.role==='admin' ? 'مدير النظام' : 'موظف');
+  document.getElementById('profile-initial').textContent = currentUser.name.charAt(0);
+  activeDashTab = 'overview';
+  renderDashNav();
+  renderDashContent();
+}
+function customSectionPermKey(id){ return 'custom_'+id; }
+function renderDashNav(){
+  const isAdmin = currentUser.role === 'admin';
+  const unread = siteData.requests.filter(r=>!r.seen).length;
+  const operationalItems = [
+    {key:'overview', label: siteData.terms.tab_overview, icon:'fa-chart-simple', visible: true},
+    {key:'requests', label: siteData.terms.tab_requests, icon:'fa-bell', visible: hasPermission(currentUser,'requests'), badge: unread},
+    {key:'finance', label: siteData.terms.tab_finance, icon:'fa-sack-dollar', visible: hasPermission(currentUser,'finance')},
+  ];
+  const customItems = siteData.customSections.map(s => ({
+    key: 'custom-'+s.id,
+    label: s.title,
+    icon: s.icon || 'fa-folder',
+    visible: isAdmin || hasPermission(currentUser, customSectionPermKey(s.id))
+  }));
+  const managementItems = [
+    {key:'services', label: siteData.terms.tab_services, icon:'fa-drafting-compass', visible: isAdmin},
+    {key:'sections', label: siteData.terms.tab_sections, icon:'fa-layer-group', visible: isAdmin},
+    {key:'employees', label: siteData.terms.tab_employees, icon:'fa-users-gear', visible: isAdmin},
+    {key:'labels', label: siteData.terms.tab_labels, icon:'fa-pen-to-square', visible: isAdmin},
+  ];
+  const items = [...operationalItems, ...customItems, ...managementItems];
+  document.getElementById('dash-nav').innerHTML = items.filter(i=> i.visible).map(i => `
+    <button onclick="switchDashTab('${i.key}')" class="w-full text-right flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-lg text-sm transition ${activeDashTab===i.key ? 'bg-bronze text-ink font-bold' : 'hover:bg-white/10 text-stone-light'}">
+      <span class="flex items-center gap-2.5"><i class="fa-solid ${i.icon} w-4"></i> ${i.label}</span>
+      ${i.badge ? `<span class="notif-badge">${i.badge}</span>` : ''}
+    </button>`).join('');
+  // إذا فقد المستخدم صلاحية القسم المفتوح حالياً، أعده إلى النظرة العامة
+  const stillVisible = items.find(i=>i.key===activeDashTab && i.visible);
+  if(!stillVisible){ activeDashTab = 'overview'; }
+}
+function switchDashTab(key){
+  const adminOnlyTabs = ['employees','labels','services','sections'];
+  if(adminOnlyTabs.includes(key) && currentUser.role !== 'admin'){
+    showToast('هذا القسم متاح لمدير النظام فقط', 'error'); return;
+  }
+  if((key==='requests' || key==='finance') && !hasPermission(currentUser, key)){
+    showToast('ليست لديك صلاحية الوصول إلى هذا القسم', 'error'); return;
+  }
+  if(key.startsWith('custom-')){
+    const id = parseInt(key.split('-')[1]);
+    if(currentUser.role !== 'admin' && !hasPermission(currentUser, customSectionPermKey(id))){
+      showToast('ليست لديك صلاحية الوصول إلى هذا القسم', 'error'); return;
+    }
+  }
+  activeDashTab = key;
+  renderDashNav();
+  renderDashContent();
+}
+function renderDashContent(){
+  const content = document.getElementById('dash-content');
+  if(activeDashTab.startsWith('custom-')){
+    const id = parseInt(activeDashTab.split('-')[1]);
+    const sec = siteData.customSections.find(s=>s.id===id);
+    document.getElementById('dash-section-title').textContent = sec ? sec.title : siteData.terms.tab_overview;
+    content.innerHTML = sec ? customSectionViewHTML(sec) : `<p class="text-sm text-stone">هذا القسم لم يعد موجوداً.</p>`;
+    if(sec){
+      const ta = document.getElementById('custom-section-content');
+      if(ta) ta.value = sec.content || '';
+    }
+    return;
+  }
+  const titles = { overview: siteData.terms.tab_overview, services: siteData.terms.tab_services, employees: siteData.terms.tab_employees, labels: siteData.terms.tab_labels, requests: siteData.terms.tab_requests, finance: siteData.terms.tab_finance, sections: siteData.terms.tab_sections };
+  document.getElementById('dash-section-title').textContent = titles[activeDashTab];
+  if(activeDashTab==='overview') content.innerHTML = overviewHTML();
+  else if(activeDashTab==='services') { content.innerHTML = servicesAdminHTML(); }
+  else if(activeDashTab==='employees') { content.innerHTML = employeesAdminHTML(); }
+  else if(activeDashTab==='labels') { content.innerHTML = labelsAdminHTML(); }
+  else if(activeDashTab==='requests') { content.innerHTML = requestsAdminHTML(); markRequestsSeen(); }
+  else if(activeDashTab==='finance') { content.innerHTML = financeAdminHTML(); }
+  else if(activeDashTab==='sections') { content.innerHTML = sectionsAdminHTML(); }
+}
+
+function overviewHTML(){
+  const activeServices = siteData.services.filter(s=>s.active).length;
+  const activeEmployees = siteData.employees.filter(e=>e.active).length;
+  const admins = siteData.employees.filter(e=>e.role==='admin').length;
+  const unreadRequests = siteData.requests.filter(r=>!r.seen).length;
+  const stat = (icon, label, value) => `
+    <div class="bg-white border border-hairline rounded-xl p-5">
+      <i class="fa-solid ${icon} text-bronze mb-3"></i>
+      <p class="font-num text-2xl font-bold">${value}</p>
+      <p class="text-xs text-stone mt-1">${label}</p>
+    </div>`;
+  return `
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      ${stat('fa-bell','طلبات جديدة', unreadRequests)}
+      ${stat('fa-drafting-compass','خدمات معروضة حالياً', activeServices)}
+      ${stat('fa-users','موظفون نشطون', activeEmployees)}
+      ${stat('fa-user-shield','عدد مديري النظام', admins)}
+    </div>
+    <div class="bg-white border border-hairline rounded-xl p-6">
+      <p class="text-sm text-stone leading-relaxed">
+        مرحباً <b>${currentUser.name}</b>، أنت مسجل الدخول بصلاحية
+        <b>${currentUser.role==='admin' ? 'مدير النظام' : 'موظف'}</b>.
+        ${currentUser.role==='admin'
+          ? 'يمكنك من هنا إدارة الخدمات، إضافة الموظفين وتعديل صلاحياتهم وكلمات مرورهم، متابعة الإدارة المالية، إضافة أقسام جديدة للقائمة الجانبية، وتعديل كل النصوص والمسميات الظاهرة في الموقع.'
+          : `الأقسام المتاحة لك حالياً: ${[
+              hasPermission(currentUser,'requests') ? 'الطلبات' : null,
+              hasPermission(currentUser,'finance') ? 'الإدارة المالية' : null,
+              ...siteData.customSections.filter(cs=>hasPermission(currentUser, customSectionPermKey(cs.id))).map(cs=>cs.title)
+            ].filter(Boolean).join('، ') || 'النظرة العامة فقط'}. لإضافة صلاحيات أخرى تواصل مع مدير النظام.`}
+      </p>
+    </div>`;
+}
+
+function servicesAdminHTML(){
+  const rows = siteData.services.map(s => `
+    <tr class="border-b border-hairline last:border-0">
+      <td class="py-3 px-3"><i class="fa-solid ${s.icon} text-bronze"></i></td>
+      <td class="py-3 px-3 font-bold">${s.title}</td>
+      <td class="py-3 px-3 text-xs">${catLabel(s.category)}</td>
+      <td class="py-3 px-3">
+        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${s.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}">
+          ${s.active ? 'ظاهرة' : 'مخفية'}
+        </span>
+      </td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        <button onclick="editService(${s.id})" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="toggleServiceActive(${s.id})" class="text-stone hover:text-ink ml-3"><i class="fa-solid ${s.active?'fa-eye-slash':'fa-eye'}"></i></button>
+        <button onclick="deleteService(${s.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  const catsBar = `
+    <div class="bg-white border border-hairline rounded-xl p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-bold text-stone"><i class="fa-solid fa-layer-group text-bronze ml-1"></i> تصنيفات الخدمات — كل تصنيف يظهر تلقائياً كمساحة مستقلة في تبويب "${siteData.terms.tab_requests}"</p>
+        <button onclick="openCategoryModal()" class="text-[11px] font-bold text-bronze-dark hover:underline whitespace-nowrap"><i class="fa-solid fa-plus"></i> إضافة تصنيف</button>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        ${siteData.categories.map(c => `
+          <span class="tag-chip inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-travertine-2">
+            ${c.label}
+            <button onclick="openCategoryModal('${c.key}')" title="تعديل الاسم" class="text-stone hover:text-ink"><i class="fa-solid fa-pen text-[10px]"></i></button>
+            <button onclick="deleteCategory('${c.key}')" title="حذف التصنيف" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+          </span>`).join('') || `<span class="text-xs text-stone">لا توجد تصنيفات بعد</span>`}
+      </div>
+    </div>`;
+  return `
+    ${catsBar}
+    <div class="flex justify-end mb-4">
+      <button onclick="openServiceModal()" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة خدمة</button>
+    </div>
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          <th class="py-3 px-3 text-right">أيقونة</th><th class="py-3 px-3 text-right">الخدمة</th><th class="py-3 px-3 text-right">التصنيف</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="5" class="text-center py-8 text-stone">لا توجد خدمات مضافة بعد</td></tr>`}</tbody>
+      </table>
+    </div>`;
+}
+function openCategoryModal(key){
+  document.getElementById('category-modal-title').textContent = key ? 'تعديل التصنيف' : 'إضافة تصنيف جديد';
+  document.getElementById('cat-key').value = key || '';
+  const existing = key ? siteData.categories.find(c=>c.key===key) : null;
+  document.getElementById('cat-label').value = existing ? existing.label : '';
+  openModal('category-modal');
+}
+async function saveCategory(e){
+  e.preventDefault();
+  const key = document.getElementById('cat-key').value;
+  const label = document.getElementById('cat-label').value.trim();
+  let finalKey = key;
+  if(key){
+    const cat = siteData.categories.find(c=>c.key===key);
+    if(cat) cat.label = label;
+  } else {
+    finalKey = 'cat_' + Date.now().toString(36);
+    siteData.categories.push({key:finalKey, label});
+  }
+  await saveData();
+  closeModal('category-modal');
+  if(document.getElementById('service-modal') && !document.getElementById('service-modal').classList.contains('hidden')){
+    renderServiceCategoryOptions(finalKey);
+  }
+  renderDashContent();
+  renderCategoryFilters();
+  renderServicesGrid();
+  showToast('تم حفظ التصنيف بنجاح');
+}
+async function deleteCategory(key){
+  const usedByServices = siteData.services.some(s=>s.category===key);
+  if(usedByServices){ showToast('لا يمكن حذف هذا التصنيف لوجود خدمات مرتبطة به، عدّل أو احذف تلك الخدمات أولاً', 'error'); return; }
+  const cat = siteData.categories.find(c=>c.key===key); if(!cat) return;
+  if(!confirm(`هل تريد حذف تصنيف "${cat.label}" نهائياً؟`)) return;
+  siteData.categories = siteData.categories.filter(c=>c.key!==key);
+  await saveData();
+  renderDashContent();
+  renderCategoryFilters();
+  renderServicesGrid();
+  showToast('تم حذف التصنيف');
+}
+
+function employeesAdminHTML(){
+  const rows = siteData.employees.map(e => `
+    <tr class="border-b border-hairline last:border-0">
+      <td class="py-3 px-3 font-bold">${e.name}</td>
+      <td class="py-3 px-3 font-num text-xs">${e.username}</td>
+      <td class="py-3 px-3 text-xs">${e.jobTitle||'—'}</td>
+      <td class="py-3 px-3">
+        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${e.role==='admin' ? 'bg-bronze/20 text-bronze-dark' : 'bg-gray-200 text-gray-600'}">
+          ${e.role==='admin' ? 'مدير النظام' : 'موظف'}
+        </span>
+      </td>
+      <td class="py-3 px-3">
+        ${e.role==='admin'
+          ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-bronze/20 text-bronze-dark">كل الصلاحيات</span>`
+          : `<div class="flex flex-wrap gap-1.5">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${hasPermission(e,'requests') ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}">الطلبات</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${hasPermission(e,'finance') ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}">الإدارة المالية</span>
+              ${siteData.customSections.map(cs => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${hasPermission(e, customSectionPermKey(cs.id)) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}">${cs.title}</span>`).join('')}
+            </div>`}
+      </td>
+      <td class="py-3 px-3">
+        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${e.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}">
+          ${e.active ? 'نشط' : 'موقوف'}
+        </span>
+      </td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        <button onclick="editEmployee(${e.id})" title="تعديل" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="openPasswordModal(${e.id})" title="تغيير كلمة المرور" class="text-stone hover:text-ink ml-3"><i class="fa-solid fa-key"></i></button>
+        <button onclick="toggleEmployeeActive(${e.id})" title="تفعيل/إيقاف" class="text-stone hover:text-ink ml-3"><i class="fa-solid ${e.active?'fa-user-slash':'fa-user-check'}"></i></button>
+        <button onclick="deleteEmployee(${e.id})" title="حذف" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  return `
+    <div class="flex justify-end mb-4">
+      <button onclick="openEmployeeModal()" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-user-plus ml-1"></i> إضافة موظف</button>
+    </div>
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          <th class="py-3 px-3 text-right">الاسم</th><th class="py-3 px-3 text-right">اسم المستخدم</th><th class="py-3 px-3 text-right">المسمى الوظيفي</th><th class="py-3 px-3 text-right">الصلاحية</th><th class="py-3 px-3 text-right">صلاحيات الوصول</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// كل تصنيف خدمة يظهر هنا كـ"مساحة" مستقلة بطلباتها الخاصة، وأي تصنيف جديد يُضاف من
+// تبويب "إدارة الخدمات" يظهر له مساحة تلقائياً هنا حتى قبل ورود أي طلب له
+function requestsAdminHTML(){
+  const statusColors = { 'قيد المراجعة':'bg-amber-100 text-amber-700', 'تم التواصل':'bg-emerald-100 text-emerald-700', 'مغلق':'bg-gray-200 text-gray-600' };
+  const sortByNewest = arr => [...arr].sort((a,b)=> b.id - a.id);
+  const renderTable = (items) => {
+    if(items.length===0){
+      return `<div class="bg-white border border-hairline rounded-xl p-5 text-center text-stone text-xs">لا توجد طلبات في هذه المساحة حتى الآن</div>`;
+    }
+    const rows = items.map(r => `
+      <tr class="border-b border-hairline last:border-0 align-top">
+        <td class="py-3 px-3">
+          <p class="font-bold">${r.name}</p>
+          <p class="font-num text-xs text-stone">${r.phone}</p>
+        </td>
+        <td class="py-3 px-3 text-xs max-w-[240px]">${r.message || '—'}</td>
+        <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${r.date}</td>
+        <td class="py-3 px-3">
+          <select onchange="updateRequestStatus(${r.id}, this.value)" class="text-[11px] font-bold rounded-full px-2.5 py-1 border-0 ${statusColors[r.status]||'bg-gray-100'}">
+            <option ${r.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
+            <option ${r.status==='تم التواصل'?'selected':''}>تم التواصل</option>
+            <option ${r.status==='مغلق'?'selected':''}>مغلق</option>
+          </select>
+        </td>
+        <td class="py-3 px-3 text-left">
+          <button onclick="deleteRequest(${r.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+    return `
+      <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+        <table class="w-full text-sm">
+          <thead class="bg-travertine-2 text-stone text-xs"><tr>
+            <th class="py-3 px-3 text-right">العميل</th><th class="py-3 px-3 text-right">التفاصيل</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  };
+  const knownKeys = siteData.categories.map(c=>c.key);
+  const sections = siteData.categories.map(cat => `
+    <div class="mb-7">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="font-display text-base">${cat.label}</h3>
+        <span class="font-num text-[11px] text-stone bg-travertine-2 px-2 py-0.5 rounded-full">${siteData.requests.filter(r=>r.category===cat.key).length}</span>
+      </div>
+      ${renderTable(sortByNewest(siteData.requests.filter(r=>r.category===cat.key)))}
+    </div>`).join('');
+  const orphanItems = sortByNewest(siteData.requests.filter(r=>!knownKeys.includes(r.category)));
+  const orphanSection = orphanItems.length ? `
+    <div class="mb-7">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="font-display text-base">طلبات أخرى</h3>
+        <span class="font-num text-[11px] text-stone bg-travertine-2 px-2 py-0.5 rounded-full">${orphanItems.length}</span>
+      </div>
+      ${renderTable(orphanItems)}
+    </div>` : '';
+  if(siteData.categories.length===0 && orphanItems.length===0){
+    return `<div class="bg-white border border-hairline rounded-xl p-10 text-center text-stone text-sm">لا توجد تصنيفات أو طلبات بعد</div>`;
+  }
+  return sections + orphanSection;
+}
+async function markRequestsSeen(){
+  let changed = false;
+  siteData.requests.forEach(r => { if(!r.seen){ r.seen = true; changed = true; } });
+  if(changed){ await saveData(); renderDashNav(); }
+}
+async function updateRequestStatus(id, status){
+  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+  r.status = status;
+  await saveData();
+  showToast('تم تحديث حالة الطلب');
+}
+async function deleteRequest(id){
+  if(!confirm('هل تريد حذف هذا الطلب نهائياً؟')) return;
+  siteData.requests = siteData.requests.filter(x=>x.id!==id);
+  await saveData();
+  renderDashContent();
+  renderDashNav();
+  showToast('تم حذف الطلب');
+}
+
+// ---------- الإدارة المالية (حسب الصلاحية) ----------
+function financeAdminHTML(){
+  const entries = siteData.finance || [];
+  const totalIncome = entries.reduce((sum, x) => sum + (Number(x.paid)||0), 0);
+  const totalExpense = entries.reduce((sum, x) => sum + (Number(x.cost)||0), 0);
+  const netProfit = totalIncome - totalExpense;
+  const fmt = n => n.toLocaleString('ar-OM', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const statCard = (icon, label, value, colorClass) => `
+    <div class="bg-white border border-hairline rounded-xl p-5">
+      <i class="fa-solid ${icon} ${colorClass||'text-bronze'} mb-3"></i>
+      <p class="font-num text-2xl font-bold ${colorClass||''}">${fmt(value)}</p>
+      <p class="text-xs text-stone mt-1">${label}</p>
+    </div>`;
+  const rows = [...entries].sort((a,b)=> b.id - a.id).map(x => {
+    const profit = (Number(x.paid)||0) - (Number(x.cost)||0);
+    return `
+    <tr class="border-b border-hairline last:border-0 align-top">
+      <td class="py-3 px-3 font-bold">${x.title}</td>
+      <td class="py-3 px-3 font-num text-xs">${fmt(Number(x.cost)||0)}</td>
+      <td class="py-3 px-3 font-num text-xs">${fmt(Number(x.paid)||0)}</td>
+      <td class="py-3 px-3 font-num text-xs font-bold ${profit>=0 ? 'text-emerald-700' : 'text-red-600'}">${fmt(profit)}</td>
+      <td class="py-3 px-3 text-xs text-stone max-w-[200px]">${x.notes || '—'}</td>
+      <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${x.date||''}</td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        <button onclick="editFinanceEntry(${x.id})" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteFinanceEntry(${x.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+      ${statCard('fa-arrow-trend-up','إجمالي الدخل (المدفوعات)', totalIncome, 'text-emerald-700')}
+      ${statCard('fa-arrow-trend-down','إجمالي المصروف (التكاليف)', totalExpense, 'text-red-600')}
+      ${statCard('fa-scale-balanced','صافي الأرباح', netProfit, netProfit>=0 ? 'text-emerald-700' : 'text-red-600')}
+    </div>
+    <div class="flex justify-end mb-4">
+      <button onclick="openFinanceModal()" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة قيد مالي</button>
+    </div>
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          <th class="py-3 px-3 text-right">البيان</th><th class="py-3 px-3 text-right">التكلفة</th><th class="py-3 px-3 text-right">المدفوع</th><th class="py-3 px-3 text-right">الربح</th><th class="py-3 px-3 text-right">ملاحظات</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="7" class="text-center py-8 text-stone">لا توجد قيود مالية مضافة بعد</td></tr>`}</tbody>
+      </table>
+    </div>`;
+}
+function openFinanceModal(){
+  document.getElementById('finance-modal-title').textContent = 'إضافة قيد مالي';
+  document.getElementById('fin-id').value = '';
+  document.getElementById('fin-title').value = '';
+  document.getElementById('fin-cost').value = 0;
+  document.getElementById('fin-paid').value = 0;
+  document.getElementById('fin-notes').value = '';
+  openModal('finance-modal');
+}
+function editFinanceEntry(id){
+  const x = siteData.finance.find(f=>f.id===id); if(!x) return;
+  document.getElementById('finance-modal-title').textContent = 'تعديل القيد المالي';
+  document.getElementById('fin-id').value = x.id;
+  document.getElementById('fin-title').value = x.title;
+  document.getElementById('fin-cost').value = x.cost;
+  document.getElementById('fin-paid').value = x.paid;
+  document.getElementById('fin-notes').value = x.notes || '';
+  openModal('finance-modal');
+}
+async function saveFinanceEntry(e){
+  e.preventDefault();
+  const id = document.getElementById('fin-id').value;
+  const now = new Date();
+  const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0');
+  const data = {
+    title: document.getElementById('fin-title').value.trim(),
+    cost: parseFloat(document.getElementById('fin-cost').value) || 0,
+    paid: parseFloat(document.getElementById('fin-paid').value) || 0,
+    notes: document.getElementById('fin-notes').value.trim()
+  };
+  if(id){
+    const x = siteData.finance.find(f=>f.id===parseInt(id));
+    Object.assign(x, data);
+  } else {
+    const newId = siteData.finance.length ? Math.max(...siteData.finance.map(f=>f.id))+1 : 1;
+    siteData.finance.push({id:newId, ...data, date: dateStr});
+  }
+  await saveData();
+  closeModal('finance-modal');
+  renderDashContent();
+  showToast('تم حفظ القيد المالي بنجاح');
+}
+async function deleteFinanceEntry(id){
+  if(!confirm('هل تريد حذف هذا القيد المالي نهائياً؟')) return;
+  siteData.finance = siteData.finance.filter(f=>f.id!==id);
+  await saveData();
+  renderDashContent();
+  showToast('تم حذف القيد المالي');
+}
+
+// ---------- إدارة الأقسام المخصصة في القائمة الجانبية (مدير النظام فقط) ----------
+function sectionsAdminHTML(){
+  const rows = siteData.customSections.map(cs => `
+    <tr class="border-b border-hairline last:border-0">
+      <td class="py-3 px-3"><i class="fa-solid ${cs.icon||'fa-folder'} text-bronze"></i></td>
+      <td class="py-3 px-3 font-bold">${cs.title}</td>
+      <td class="py-3 px-3">
+        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${cs.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}">
+          ${cs.active ? 'ظاهر في القائمة الجانبية' : 'مخفي'}
+        </span>
+      </td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        <button onclick="switchDashTab('custom-${cs.id}')" title="فتح القسم وإضافة محتواه" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+        <button onclick="editCustomSection(${cs.id})" title="تعديل الاسم والأيقونة" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="toggleCustomSectionActive(${cs.id})" title="إظهار/إخفاء من القائمة" class="text-stone hover:text-ink ml-3"><i class="fa-solid ${cs.active?'fa-eye-slash':'fa-eye'}"></i></button>
+        <button onclick="deleteCustomSection(${cs.id})" title="حذف القسم" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  return `
+    <p class="text-sm text-stone mb-4 leading-relaxed">أضف عناصر جديدة تظهر في القائمة الجانبية للوحة التحكم (مثل أرشيف، تقارير، أي محتوى إضافي تحتاجه). بعد إضافة القسم اضغط على أيقونة <i class="fa-solid fa-arrow-up-right-from-square text-bronze"></i> لكتابة محتواه، وحدد من تبويب "${siteData.terms.tab_employees}" أي الموظفين يملك صلاحية الوصول إليه.</p>
+    <div class="flex justify-end mb-4">
+      <button onclick="openCustomSectionModal()" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة قسم جديد</button>
+    </div>
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          <th class="py-3 px-3 text-right">أيقونة</th><th class="py-3 px-3 text-right">اسم القسم</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" class="text-center py-8 text-stone">لم تُضف أي أقسام مخصصة بعد</td></tr>`}</tbody>
+      </table>
+    </div>`;
+}
+function openCustomSectionModal(){
+  document.getElementById('custom-section-modal-title').textContent = 'إضافة قسم جديد';
+  document.getElementById('cs-id').value = '';
+  document.getElementById('cs-title').value = '';
+  document.getElementById('cs-icon').value = 'fa-folder';
+  openModal('custom-section-modal');
+}
+function editCustomSection(id){
+  const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
+  document.getElementById('custom-section-modal-title').textContent = 'تعديل القسم';
+  document.getElementById('cs-id').value = cs.id;
+  document.getElementById('cs-title').value = cs.title;
+  document.getElementById('cs-icon').value = cs.icon || 'fa-folder';
+  openModal('custom-section-modal');
+}
+async function saveCustomSection(e){
+  e.preventDefault();
+  const id = document.getElementById('cs-id').value;
+  const data = {
+    title: document.getElementById('cs-title').value.trim(),
+    icon: document.getElementById('cs-icon').value.trim() || 'fa-folder'
+  };
+  if(id){
+    const cs = siteData.customSections.find(x=>x.id===parseInt(id));
+    Object.assign(cs, data);
+  } else {
+    const newId = siteData.customSections.length ? Math.max(...siteData.customSections.map(c=>c.id))+1 : 1;
+    siteData.customSections.push({id:newId, ...data, content:'', active:true});
+  }
+  await saveData();
+  closeModal('custom-section-modal');
+  renderDashNav();
+  renderDashContent();
+  showToast('تم حفظ القسم بنجاح');
+}
+async function toggleCustomSectionActive(id){
+  const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
+  cs.active = !cs.active;
+  await saveData();
+  renderDashNav();
+  renderDashContent();
+}
+async function deleteCustomSection(id){
+  const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
+  if(!confirm(`هل تريد حذف القسم "${cs.title}" نهائياً؟ سيُحذف محتواه وتُلغى صلاحية الوصول إليه من جميع الموظفين.`)) return;
+  siteData.customSections = siteData.customSections.filter(x=>x.id!==id);
+  siteData.employees.forEach(emp => { if(emp.permissions) delete emp.permissions[customSectionPermKey(id)]; });
+  if(activeDashTab === 'custom-'+id) activeDashTab = 'overview';
+  await saveData();
+  renderDashNav();
+  renderDashContent();
+  showToast('تم حذف القسم');
+}
+function customSectionViewHTML(cs){
+  const canEdit = currentUser.role==='admin' || hasPermission(currentUser, customSectionPermKey(cs.id));
+  return `
+    <div class="bg-white border border-hairline rounded-xl p-6">
+      <p class="text-sm text-stone mb-3 leading-relaxed">هذا محتوى قسم "<b>${cs.title}</b>"، ويظهر لكل من يملك صلاحية الوصول إليه فقط.</p>
+      <textarea id="custom-section-content" rows="14" ${canEdit?'':'disabled'} class="w-full text-sm border border-hairline rounded-lg px-3 py-3 leading-relaxed"></textarea>
+      ${canEdit ? `
+      <button onclick="saveCustomSectionContent(${cs.id})" class="mt-4 bg-bronze text-ink font-bold text-sm px-6 py-3 rounded-lg">
+        <i class="fa-solid fa-floppy-disk ml-1"></i> حفظ المحتوى
+      </button>` : ''}
+    </div>`;
+}
+async function saveCustomSectionContent(id){
+  const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
+  cs.content = document.getElementById('custom-section-content').value;
+  await saveData();
+  showToast('تم حفظ محتوى القسم بنجاح');
+}
+
+const LABEL_GROUPS = [
+  { title:'عام وشريط التنقل', keys:['site_name','nav_home','nav_services','nav_about','nav_contact','staff_login_label'] },
+  { title:'الواجهة الرئيسية', keys:['hero_eyebrow','hero_title','hero_subtitle','hero_cta','hero_secondary_cta'] },
+  { title:'من نحن', keys:['about_eyebrow','about_title','about_text'] },
+  { title:'الخدمات والتصنيفات', keys:['services_eyebrow','services_title','services_subtitle','cat_all'] },
+  { title:'تواصل معنا', keys:['contact_eyebrow','contact_title','contact_subtitle','contact_phone_label','contact_phone_value','contact_email_label','contact_email_value','contact_address_label','contact_address_value'] },
+  { title:'التذييل ولوحة التحكم', keys:['footer_text','dash_title','tab_overview','tab_services','tab_employees','tab_labels','tab_requests','tab_finance','tab_sections','btn_logout'] },
+  { title:'نافذة تقديم الطلب', keys:['contact_request_btn','service_request_btn','request_modal_title','request_name_label','request_phone_label','request_category_label','request_message_label','request_submit_btn'] },
+];
+function labelsAdminHTML(){
+  const groups = LABEL_GROUPS.map(g => `
+    <div class="bg-white border border-hairline rounded-xl p-5 mb-4">
+      <h4 class="font-display text-sm mb-4 text-bronze-dark">${g.title}</h4>
+      <div class="grid sm:grid-cols-2 gap-3">
+        ${g.keys.map(k => `
+          <div>
+            <label class="block text-[11px] text-stone mb-1">${k}</label>
+            <input data-label-key="${k}" value="${(siteData.terms[k]||'').replace(/"/g,'&quot;')}" class="w-full text-sm border border-hairline rounded-lg px-3 py-2">
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+  return `
+    <p class="text-sm text-stone mb-4">غيّر أي نص يظهر في الموقع العام أو لوحة التحكم، ثم اضغط حفظ لتطبيق التعديلات فوراً.</p>
+    ${groups}
+    <button onclick="saveLabels()" class="bg-bronze text-ink font-bold text-sm px-6 py-3 rounded-lg sticky bottom-4"><i class="fa-solid fa-floppy-disk ml-1"></i> حفظ كل المسميات</button>`;
+}
+async function saveLabels(){
+  document.querySelectorAll('[data-label-key]').forEach(inp => {
+    siteData.terms[inp.dataset.labelKey] = inp.value;
+  });
+  await saveData();
+  applyTerms();
+  renderCategoryFilters();
+  renderServicesGrid();
+  renderDashNav();
+  renderDashContent();
+  showToast('تم حفظ المسميات الجديدة بنجاح');
+}
+
+// ---------- إدارة الخدمات ----------
+function renderServiceCategoryOptions(selected){
+  const sel = document.getElementById('svc-category');
+  sel.innerHTML = siteData.categories.map(c => `<option value="${c.key}" ${c.key===selected?'selected':''}>${c.label}</option>`).join('');
+}
+function openServiceModal(){
+  document.getElementById('service-modal-title').textContent = 'إضافة خدمة';
+  document.getElementById('svc-id').value = '';
+  document.getElementById('svc-title').value = '';
+  renderServiceCategoryOptions(siteData.categories[0] ? siteData.categories[0].key : '');
+  document.getElementById('svc-icon').value = 'fa-couch';
+  document.getElementById('svc-desc').value = '';
+  document.getElementById('svc-active').checked = true;
+  openModal('service-modal');
+}
+function editService(id){
+  const s = siteData.services.find(x=>x.id===id); if(!s) return;
+  document.getElementById('service-modal-title').textContent = 'تعديل الخدمة';
+  document.getElementById('svc-id').value = s.id;
+  document.getElementById('svc-title').value = s.title;
+  renderServiceCategoryOptions(s.category);
+  document.getElementById('svc-icon').value = s.icon;
+  document.getElementById('svc-desc').value = s.desc;
+  document.getElementById('svc-active').checked = s.active;
+  openModal('service-modal');
+}
+async function saveService(e){
+  e.preventDefault();
+  const id = document.getElementById('svc-id').value;
+  const data = {
+    title: document.getElementById('svc-title').value.trim(),
+    category: document.getElementById('svc-category').value,
+    icon: document.getElementById('svc-icon').value,
+    desc: document.getElementById('svc-desc').value.trim(),
+    active: document.getElementById('svc-active').checked
+  };
+  if(id){
+    const s = siteData.services.find(x=>x.id===parseInt(id));
+    Object.assign(s, data);
+  } else {
+    const newId = siteData.services.length ? Math.max(...siteData.services.map(s=>s.id))+1 : 1;
+    siteData.services.push({id:newId, ...data});
+  }
+  await saveData();
+  closeModal('service-modal');
+  renderDashContent();
+  renderServicesGrid();
+  showToast('تم حفظ الخدمة بنجاح');
+}
+async function toggleServiceActive(id){
+  const s = siteData.services.find(x=>x.id===id); if(!s) return;
+  s.active = !s.active;
+  await saveData(); renderDashContent(); renderServicesGrid();
+}
+async function deleteService(id){
+  if(!confirm('هل تريد حذف هذه الخدمة نهائياً؟')) return;
+  siteData.services = siteData.services.filter(x=>x.id!==id);
+  await saveData(); renderDashContent(); renderServicesGrid();
+  showToast('تم حذف الخدمة');
+}
+
+// ---------- إدارة الموظفين (مدير النظام فقط) ----------
+function toggleEmpPermFields(){
+  const isAdminRole = document.getElementById('emp-role').value === 'admin';
+  const field = document.getElementById('emp-permissions-field');
+  field.classList.toggle('hidden', isAdminRole);
+}
+function renderEmpCustomPermCheckboxes(emp){
+  const wrap = document.getElementById('emp-perm-custom-list');
+  wrap.innerHTML = siteData.customSections.map(cs => `
+    <label class="flex items-center gap-2 text-sm mt-2">
+      <input type="checkbox" class="emp-perm-custom w-4 h-4" data-section-id="${cs.id}" ${emp && hasPermission(emp, customSectionPermKey(cs.id)) ? 'checked' : ''}>
+      الوصول إلى ${cs.title}
+    </label>`).join('');
+}
+function openEmployeeModal(){
+  document.getElementById('employee-modal-title').textContent = 'إضافة موظف';
+  document.getElementById('emp-id').value = '';
+  document.getElementById('emp-name').value = '';
+  document.getElementById('emp-jobtitle').value = '';
+  document.getElementById('emp-username').value = '';
+  document.getElementById('emp-role').value = 'employee';
+  document.getElementById('emp-password').value = '';
+  document.getElementById('emp-password').required = true;
+  document.getElementById('emp-perm-requests').checked = true;
+  document.getElementById('emp-perm-finance').checked = false;
+  renderEmpCustomPermCheckboxes(null);
+  toggleEmpPermFields();
+  openModal('employee-modal');
+}
+function editEmployee(id){
+  const emp = siteData.employees.find(x=>x.id===id); if(!emp) return;
+  document.getElementById('employee-modal-title').textContent = 'تعديل بيانات الموظف';
+  document.getElementById('emp-id').value = emp.id;
+  document.getElementById('emp-name').value = emp.name;
+  document.getElementById('emp-jobtitle').value = emp.jobTitle||'';
+  document.getElementById('emp-username').value = emp.username;
+  document.getElementById('emp-role').value = emp.role;
+  document.getElementById('emp-password').value = '';
+  document.getElementById('emp-password').required = false;
+  document.getElementById('emp-perm-requests').checked = !!(emp.permissions && emp.permissions.requests);
+  document.getElementById('emp-perm-finance').checked = !!(emp.permissions && emp.permissions.finance);
+  renderEmpCustomPermCheckboxes(emp);
+  toggleEmpPermFields();
+  openModal('employee-modal');
+}
+async function saveEmployee(e){
+  e.preventDefault();
+  const id = document.getElementById('emp-id').value;
+  const username = document.getElementById('emp-username').value.trim();
+  const dup = siteData.employees.find(x => x.username===username && x.id !== parseInt(id||-1));
+  if(dup){ showToast('اسم المستخدم مستخدم من قبل موظف آخر', 'error'); return; }
+  const role = document.getElementById('emp-role').value;
+  let permissions;
+  if(role === 'admin'){
+    permissions = { requests:true, finance:true };
+    siteData.customSections.forEach(cs => { permissions[customSectionPermKey(cs.id)] = true; });
+  } else {
+    permissions = {
+      requests: document.getElementById('emp-perm-requests').checked,
+      finance: document.getElementById('emp-perm-finance').checked
+    };
+    document.querySelectorAll('.emp-perm-custom').forEach(cb => {
+      permissions[customSectionPermKey(parseInt(cb.dataset.sectionId))] = cb.checked;
+    });
+  }
+  const data = {
+    name: document.getElementById('emp-name').value.trim(),
+    jobTitle: document.getElementById('emp-jobtitle').value.trim(),
+    username,
+    role,
+    permissions
+  };
+  const pwd = document.getElementById('emp-password').value.trim();
+  if(id){
+    const emp = siteData.employees.find(x=>x.id===parseInt(id));
+    Object.assign(emp, data);
+    if(pwd) emp.password = pwd;
+    if(currentUser && currentUser.id === emp.id) currentUser = emp;
+  } else {
+    const newId = siteData.employees.length ? Math.max(...siteData.employees.map(e=>e.id))+1 : 1;
+    siteData.employees.push({id:newId, ...data, password: pwd || '1234', active:true});
+  }
+  await saveData();
+  closeModal('employee-modal');
+  renderDashNav();
+  renderDashContent();
+  showToast('تم حفظ بيانات الموظف بنجاح');
+}
+async function toggleEmployeeActive(id){
+  const emp = siteData.employees.find(x=>x.id===id); if(!emp) return;
+  if(emp.id === currentUser.id){ showToast('لا يمكنك إيقاف حسابك الحالي', 'error'); return; }
+  if(emp.role==='admin' && emp.active){
+    const otherActiveAdmins = siteData.employees.filter(e=>e.role==='admin' && e.active && e.id!==emp.id).length;
+    if(otherActiveAdmins===0){ showToast('لا يمكن إيقاف آخر حساب مدير نظام نشط', 'error'); return; }
+  }
+  emp.active = !emp.active;
+  await saveData(); renderDashContent();
+}
+async function deleteEmployee(id){
+  const emp = siteData.employees.find(x=>x.id===id); if(!emp) return;
+  if(emp.id === currentUser.id){ showToast('لا يمكنك حذف حسابك الحالي', 'error'); return; }
+  if(emp.role==='admin'){
+    const otherAdmins = siteData.employees.filter(e=>e.role==='admin' && e.id!==emp.id).length;
+    if(otherAdmins===0){ showToast('لا يمكن حذف آخر حساب مدير نظام', 'error'); return; }
+  }
+  if(!confirm(`هل تريد حذف الموظف "${emp.name}" نهائياً؟`)) return;
+  siteData.employees = siteData.employees.filter(x=>x.id!==id);
+  await saveData(); renderDashContent();
+  showToast('تم حذف الموظف');
+}
+
+// تغيير كلمة مرور موظف من قبل مدير النظام
+function openPasswordModal(id){
+  const emp = siteData.employees.find(x=>x.id===id); if(!emp) return;
+  document.getElementById('pwd-emp-id').value = emp.id;
+  document.getElementById('pwd-emp-name').textContent = emp.name;
+  document.getElementById('pwd-new').value = '';
+  openModal('password-modal');
+}
+async function savePassword(e){
+  e.preventDefault();
+  const id = parseInt(document.getElementById('pwd-emp-id').value);
+  const emp = siteData.employees.find(x=>x.id===id); if(!emp) return;
+  emp.password = document.getElementById('pwd-new').value;
+  await saveData();
+  closeModal('password-modal');
+  showToast(`تم تغيير كلمة مرور "${emp.name}" بنجاح`);
+}
+
+// تغيير كلمة المرور الخاصة بالمستخدم الحالي
+function openSelfPasswordModal(){
+  document.getElementById('self-pwd-current').value='';
+  document.getElementById('self-pwd-new').value='';
+  document.getElementById('self-pwd-error').classList.add('hidden');
+  openModal('self-password-modal');
+}
+async function saveSelfPassword(e){
+  e.preventDefault();
+  const cur = document.getElementById('self-pwd-current').value;
+  const errEl = document.getElementById('self-pwd-error');
+  if(cur !== currentUser.password){ errEl.textContent='كلمة المرور الحالية غير صحيحة'; errEl.classList.remove('hidden'); return; }
+  currentUser.password = document.getElementById('self-pwd-new').value;
+  await saveData();
+  closeModal('self-password-modal');
+  showToast('تم تحديث كلمة مرورك بنجاح');
+}
+
+// إغلاق أي نافذة مفتوحة بالضغط على مفتاح Escape
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Escape') return;
+  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && !el.classList.contains('hidden')) closeModal(id);
+  });
+});
+
+// ---------- المزامنة الحية بين كل الأجهزة/المتصفحات المفتوحة على نفس الرابط ----------
+// أي تعديل (خدمة، تصنيف، طلب، موظف، مسمى...) يُحفظ فوراً في Firebase، وكل جهاز آخر مفتوح
+// على نفس الرابط يستلم التحديث لحظياً عبر الاستماع الحي (dataRef.on) دون إعادة تحميل الصفحة
+function applyIncomingData(val){
+  if(!val) return;
+  const incomingStr = JSON.stringify(val);
+  if(incomingStr === lastSyncedSnapshot) return; // هذا نفس ما لدينا بالفعل (أو صدى لحفظنا الخاص)
+  lastSyncedSnapshot = incomingStr;
+  siteData = mergeSiteData(val);
+  if(currentUser){
+    const freshMe = siteData.employees.find(e=>e.id===currentUser.id);
+    if(!freshMe || !freshMe.active){
+      showToast('تم إيقاف/حذف حسابك من قبل مدير النظام', 'error');
+      logout();
+      return;
+    }
+    currentUser = freshMe;
+  }
+  if(!document.getElementById('dashboard').classList.contains('hidden')){
+    // لوحة التحكم مفتوحة حالياً على هذا الجهاز
+    document.getElementById('profile-name').textContent = currentUser.name;
+    document.getElementById('profile-role').textContent = currentUser.jobTitle || (currentUser.role==='admin' ? 'مدير النظام' : 'موظف');
+    document.getElementById('profile-initial').textContent = currentUser.name.charAt(0);
+    applyTerms();
+    renderDashNav();
+    renderDashContent();
+  } else {
+    // الموقع العام مفتوح حالياً على هذا الجهاز
+    renderPublicSite();
+  }
+}
+function syncLatestData(){
+  dataRef.once('value').then(snap=>{ if(!isAnyModalOpen()) applyIncomingData(snap.val()); }).catch(()=>{});
+}
+// عند العودة إلى تبويب المتصفح (مثلاً بعد تصفح تطبيق آخر على الجوال) نتحقق فوراً من آخر نسخة
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncLatestData(); });
+
+// ---------- التشغيل ----------
+(async function init(){
+  await loadData();
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('public-site').classList.remove('hidden');
+  renderPublicSite();
+})();
+</script>
+</body>
+</html>
