@@ -13,7 +13,7 @@
 <!-- Firebase: نستخدمه كقاعدة بيانات حية مشتركة بين كل من يفتح الرابط من أي جهاز -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 :root{
@@ -508,7 +508,7 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
       </div>
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_phone_label">رقم الهاتف</label>
-        <div class="flex gap-2 mb-2">
+        <div class="flex gap-2">
           <select id="req-phone-country" class="text-sm border border-hairline rounded-lg px-2 py-2.5 font-num w-[104px] shrink-0">
             <option value="+968" selected>عُمان +968</option>
             <option value="+966">السعودية +966</option>
@@ -543,17 +543,22 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
           </select>
           <input id="req-phone" required inputmode="numeric" oninput="restrictDigits(this, false)" placeholder="9xxxxxxx" class="flex-1 text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
         </div>
-        <button type="button" id="req-send-code-btn" onclick="sendPhoneCode()" class="w-full text-[11px] font-bold bg-ink text-paper px-3 py-2.5 rounded-lg">إرسال رمز التحقق</button>
-        <p class="text-[11px] text-stone mt-1.5">لازم تتحقق من رقم هاتفك عبر رسالة SMS قبل إرسال الطلب</p>
-        <div id="req-otp-group" class="hidden mt-3">
-          <label class="block text-xs font-bold text-stone mb-1.5">رمز التحقق المرسل عبر SMS</label>
-          <div class="flex gap-2">
-            <input id="req-otp" inputmode="numeric" maxlength="6" oninput="restrictDigits(this, false)" placeholder="000000" class="flex-1 text-sm border border-hairline rounded-lg px-3 py-2.5 font-num tracking-widest">
-            <button type="button" onclick="verifyPhoneCode()" class="text-[11px] font-bold bg-bronze text-ink px-3 rounded-lg whitespace-nowrap">تأكيد الرمز</button>
-          </div>
-          <p id="req-otp-status" class="hidden text-[11px] font-bold mt-1.5"></p>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">البريد الإلكتروني</label>
+        <div class="flex gap-2">
+          <input id="req-email" type="email" required placeholder="example@email.com" class="flex-1 text-sm border border-hairline rounded-lg px-3 py-2.5" dir="ltr">
+          <button type="button" id="req-send-email-code-btn" onclick="sendEmailCode()" class="text-[11px] font-bold bg-ink text-paper px-3 rounded-lg whitespace-nowrap">إرسال رمز التحقق</button>
         </div>
-        <div id="recaptcha-container"></div>
+        <p class="text-[11px] text-stone mt-1.5">لازم تتحقق من بريدك الإلكتروني عبر رمز يوصلك بالإيميل قبل إرسال الطلب</p>
+        <div id="req-email-otp-group" class="hidden mt-3">
+          <label class="block text-xs font-bold text-stone mb-1.5">رمز التحقق المرسل إلى بريدك</label>
+          <div class="flex gap-2">
+            <input id="req-email-otp" inputmode="numeric" maxlength="6" oninput="restrictDigits(this, false)" placeholder="000000" class="flex-1 text-sm border border-hairline rounded-lg px-3 py-2.5 font-num tracking-widest">
+            <button type="button" onclick="verifyEmailCode()" class="text-[11px] font-bold bg-bronze text-ink px-3 rounded-lg whitespace-nowrap">تأكيد الرمز</button>
+          </div>
+          <p id="req-email-otp-status" class="hidden text-[11px] font-bold mt-1.5"></p>
+        </div>
       </div>
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_category_label">الخدمة المطلوبة</label>
@@ -586,6 +591,11 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const dataRef = firebase.database().ref('studio-site-data');
+
+// ---------- الاتصال بـ EmailJS لإرسال رمز التحقق للبريد الإلكتروني ----------
+const EMAILJS_SERVICE_ID = 'service_1gfdgu8';
+const EMAILJS_TEMPLATE_ID = 'template_zw3o0ja';
+emailjs.init({ publicKey: 'LnWixuGnn4HfPqx1y' });
 
 // التصنيفات أصبحت ديناميكية: يمكن لمدير النظام إضافة تصنيف جديد من تبويب "إدارة الخدمات"
 // وسيظهر تلقائياً كخيار عند إضافة خدمة، وكمساحة مستقلة في تبويب "الطلبات"
@@ -717,7 +727,7 @@ function showToast(msg, type='success'){
 function closeModal(id){
   document.getElementById(id).classList.add('hidden');
   document.getElementById(id).classList.remove('flex');
-  if(id === 'request-modal') resetPhoneVerification();
+  if(id === 'request-modal') resetEmailVerification();
   syncLatestData(); // نتحقق فوراً من وجود تحديثات وصلت من جهاز آخر أثناء فتح هذه النافذة
 }
 function openModal(id){ document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
@@ -784,78 +794,76 @@ function restrictDigits(el, allowDecimal){
   el.value = v;
 }
 
-// ---------- التحقق من رقم الهاتف عبر رمز SMS (Firebase Phone Authentication) ----------
-let confirmationResult = null;
-let requestPhoneVerified = false;
-let verifiedPhoneNumber = '';
-
-// نبني الرقم الدولي الكامل من رمز الدولة المختار + الرقم المحلي (أرقام فقط بعد إزالة الأصفار البادئة)
+// نبني الرقم الكامل من رمز الدولة المختار + الرقم المحلي (أرقام فقط بعد إزالة الأصفار البادئة)
+// بدون أي تحقق عبر رمز SMS — فقط لعرضه كاملاً وواضحاً للموظف عند فتح الطلب
 function normalizePhone(){
   const cc = document.getElementById('req-phone-country').value;
   let local = document.getElementById('req-phone').value.replace(/\D/g,'').replace(/^0+/, '');
   return cc + local;
 }
-function resetPhoneVerification(){
-  confirmationResult = null;
-  requestPhoneVerified = false;
-  verifiedPhoneNumber = '';
-  document.getElementById('req-phone').readOnly = false;
-  document.getElementById('req-phone-country').disabled = false;
-  document.getElementById('req-otp').value = '';
-  document.getElementById('req-otp-group').classList.add('hidden');
-  document.getElementById('req-otp-status').classList.add('hidden');
-  const btn = document.getElementById('req-send-code-btn');
+
+// ---------- التحقق من البريد الإلكتروني عبر رمز يُرسل بواسطة EmailJS ----------
+let emailVerificationCode = null;
+let emailCodeSentTo = '';
+let emailVerified = false;
+let verifiedEmail = '';
+
+function generateEmailCode(){
+  return String(Math.floor(100000 + Math.random()*900000));
+}
+function resetEmailVerification(){
+  emailVerificationCode = null;
+  emailCodeSentTo = '';
+  emailVerified = false;
+  verifiedEmail = '';
+  document.getElementById('req-email').readOnly = false;
+  document.getElementById('req-email-otp').value = '';
+  document.getElementById('req-email-otp-group').classList.add('hidden');
+  document.getElementById('req-email-otp-status').classList.add('hidden');
+  const btn = document.getElementById('req-send-email-code-btn');
   btn.disabled = false; btn.textContent = 'إرسال رمز التحقق';
-  if(window.recaptchaVerifier){
-    try{ window.recaptchaVerifier.clear(); }catch(e){}
-    window.recaptchaVerifier = null;
-  }
 }
-function ensureRecaptcha(){
-  if(!window.recaptchaVerifier){
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size:'invisible' }, firebase.auth());
-  }
-  return window.recaptchaVerifier;
-}
-async function sendPhoneCode(){
-  const phoneInput = document.getElementById('req-phone');
-  const localRaw = phoneInput.value.replace(/\D/g,'');
-  if(!localRaw){ showToast('اكتب رقم هاتفك أولاً', 'error'); return; }
-  const phone = normalizePhone();
-  const btn = document.getElementById('req-send-code-btn');
+async function sendEmailCode(){
+  const emailInput = document.getElementById('req-email');
+  const email = emailInput.value.trim();
+  if(!email || !email.includes('@') || !email.includes('.')){ showToast('اكتب بريد إلكتروني صحيح أولاً', 'error'); return; }
+  const btn = document.getElementById('req-send-email-code-btn');
   btn.disabled = true; btn.textContent = 'جارِ الإرسال...';
+  const code = generateEmailCode();
   try{
-    const appVerifier = ensureRecaptcha();
-    confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
-    verifiedPhoneNumber = phone;
-    requestPhoneVerified = false;
-    phoneInput.readOnly = true;
-    document.getElementById('req-phone-country').disabled = true;
-    document.getElementById('req-otp-group').classList.remove('hidden');
-    document.getElementById('req-otp').focus();
-    showToast('تم إرسال رمز التحقق عبر رسالة SMS');
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: email,
+      code: code,
+      name: document.getElementById('req-name').value.trim() || 'زائر'
+    });
+    emailVerificationCode = code;
+    emailCodeSentTo = email;
+    emailVerified = false;
+    emailInput.readOnly = true;
+    document.getElementById('req-email-otp-group').classList.remove('hidden');
+    document.getElementById('req-email-otp').focus();
+    showToast('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
     btn.textContent = 'إعادة الإرسال';
     btn.disabled = false;
   }catch(e){
     console.error(e);
-    showToast('تعذّر إرسال رمز التحقق، تأكد من صحة رقم الهاتف وحاول مرة أخرى', 'error');
+    showToast('تعذّر إرسال رمز التحقق، تأكد من صحة البريد وحاول مرة أخرى', 'error');
     btn.disabled = false; btn.textContent = 'إرسال رمز التحقق';
-    if(window.recaptchaVerifier){ try{ window.recaptchaVerifier.clear(); }catch(err){} window.recaptchaVerifier = null; }
   }
 }
-async function verifyPhoneCode(){
-  const code = document.getElementById('req-otp').value.trim();
-  const statusEl = document.getElementById('req-otp-status');
-  if(!confirmationResult){ showToast('أرسل رمز التحقق أولاً', 'error'); return; }
+function verifyEmailCode(){
+  const code = document.getElementById('req-email-otp').value.trim();
+  const statusEl = document.getElementById('req-email-otp-status');
+  if(!emailVerificationCode){ showToast('أرسل رمز التحقق أولاً', 'error'); return; }
   if(!code){ showToast('اكتب رمز التحقق المرسل لك', 'error'); return; }
-  try{
-    await confirmationResult.confirm(code);
-    requestPhoneVerified = true;
-    statusEl.textContent = 'تم تأكيد رقم الهاتف بنجاح';
+  if(code === emailVerificationCode){
+    emailVerified = true;
+    verifiedEmail = emailCodeSentTo;
+    statusEl.textContent = 'تم تأكيد البريد الإلكتروني بنجاح';
     statusEl.classList.remove('hidden','text-red-600');
     statusEl.classList.add('text-emerald-700');
-  }catch(e){
-    requestPhoneVerified = false;
+  } else {
+    emailVerified = false;
     statusEl.textContent = 'رمز التحقق غير صحيح، تأكد وحاول مرة أخرى';
     statusEl.classList.remove('hidden','text-emerald-700');
     statusEl.classList.add('text-red-600');
@@ -869,14 +877,15 @@ function openRequestModal(prefillCategory){
   document.getElementById('req-name').value = '';
   document.getElementById('req-phone').value = '';
   document.getElementById('req-phone-country').value = '+968';
+  document.getElementById('req-email').value = '';
   document.getElementById('req-message').value = '';
-  resetPhoneVerification();
+  resetEmailVerification();
   openModal('request-modal');
 }
 async function submitRequest(e){
   e.preventDefault();
-  if(!requestPhoneVerified){
-    showToast('لازم تتحقق من رقم هاتفك عبر رمز SMS قبل إرسال الطلب', 'error');
+  if(!emailVerified || document.getElementById('req-email').value.trim() !== verifiedEmail){
+    showToast('لازم تتحقق من بريدك الإلكتروني عبر الرمز المرسل قبل إرسال الطلب', 'error');
     return;
   }
   const newId = siteData.requests.length ? Math.max(...siteData.requests.map(r=>r.id))+1 : 1;
@@ -885,7 +894,8 @@ async function submitRequest(e){
   siteData.requests.push({
     id: newId,
     name: document.getElementById('req-name').value.trim(),
-    phone: verifiedPhoneNumber || document.getElementById('req-phone').value.trim(),
+    phone: normalizePhone(),
+    email: verifiedEmail,
     category: document.getElementById('req-category').value,
     message: document.getElementById('req-message').value.trim(),
     date: dateStr,
@@ -894,7 +904,6 @@ async function submitRequest(e){
   });
   await saveData();
   closeModal('request-modal');
-  resetPhoneVerification();
   showToast('تم إرسال طلبك بنجاح، سنتواصل معك قريباً');
   if(currentUser) renderDashNav();
 }
@@ -1183,6 +1192,7 @@ function requestsAdminHTML(){
         <td class="py-3 px-3">
           <p class="font-bold">${r.name}</p>
           <p class="font-num text-xs text-stone">${r.phone}</p>
+          ${r.email ? `<p class="text-xs text-stone" dir="ltr">${r.email}</p>` : ''}
         </td>
         <td class="py-3 px-3 text-xs max-w-[240px]">${r.message || '—'}</td>
         <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${r.date}</td>
