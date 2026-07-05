@@ -230,7 +230,7 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
 <div id="dashboard" class="hidden min-h-screen bg-travertine-2">
   <div class="flex min-h-screen">
     <!-- الشريط الجانبي -->
-    <aside class="w-64 bg-ink text-paper flex-shrink-0 flex flex-col">
+    <aside id="dash-sidebar" class="w-64 bg-ink text-paper flex-shrink-0 flex flex-col">
       <div class="p-5 border-b border-hairline-light">
         <div class="flex items-center gap-2.5 mb-1">
           <i class="fa-solid fa-compass-drafting text-bronze"></i>
@@ -261,9 +261,14 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
     <!-- محتوى اللوحة -->
     <main class="flex-1 p-6 md:p-8 overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <div>
-          <a href="#" onclick="backToSite(event)" class="text-xs text-stone hover:text-bronze"><i class="fa-solid fa-arrow-left"></i> عرض الموقع العام</a>
-          <h1 class="font-display text-2xl mt-1" id="dash-section-title">نظرة عامة</h1>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" title="إظهار/إخفاء القائمة الجانبية" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg border border-hairline text-ink hover:bg-ink hover:text-paper hover:border-ink transition">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <a href="#" onclick="backToSite(event)" class="text-xs text-stone hover:text-bronze"><i class="fa-solid fa-arrow-left"></i> عرض الموقع العام</a>
+            <h1 class="font-display text-2xl mt-1" id="dash-section-title">نظرة عامة</h1>
+          </div>
         </div>
         <button onclick="logout()" class="text-xs font-bold border border-hairline px-4 py-2.5 rounded-full hover:bg-ink hover:text-paper hover:border-ink transition flex items-center gap-2">
           <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -486,12 +491,12 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
 
 <!-- نافذة إضافة/تعديل قسم مخصص في القائمة الجانبية -->
 <div id="custom-section-modal" onclick="if(event.target===this) closeModal('custom-section-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden fade-in">
     <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
       <h4 class="font-display text-lg" id="custom-section-modal-title">إضافة قسم جديد</h4>
       <button onclick="closeModal('custom-section-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <form onsubmit="saveCustomSection(event)" class="p-6 space-y-4">
+    <form onsubmit="saveCustomSection(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
       <input type="hidden" id="cs-id">
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5">اسم القسم (يظهر في القائمة الجانبية)</label>
@@ -502,9 +507,36 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
         <input id="cs-icon" placeholder="fa-folder" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
         <p class="text-[11px] text-stone mt-1">مثال: fa-folder، fa-images، fa-file-lines، fa-clipboard-list</p>
       </div>
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-xs font-bold text-stone">خانات هذا القسم</label>
+          <button type="button" onclick="addFieldRow()" class="text-[11px] font-bold text-bronze-dark hover:underline"><i class="fa-solid fa-plus"></i> إضافة خانة</button>
+        </div>
+        <p class="text-[11px] text-stone mb-2">حدد أي خانات يحتويها هذا القسم (مثل: السعر، الرسالة، أي شيء تحتاجه)، وسمّها بالاسم اللي تبيه</p>
+        <div id="cs-fields-container" class="space-y-2"></div>
+      </div>
       <div class="flex gap-3">
         <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ القسم</button>
         <button type="button" onclick="closeModal('custom-section-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل عنصر داخل قسم مخصص (تُبنى خاناتها ديناميكياً حسب إعدادات القسم) -->
+<div id="custom-item-modal" onclick="if(event.target===this) closeModal('custom-item-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="custom-item-modal-title">إضافة عنصر</h4>
+      <button onclick="closeModal('custom-item-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveCustomItem(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+      <input type="hidden" id="ci-section-id">
+      <input type="hidden" id="ci-item-id">
+      <div id="custom-item-fields" class="space-y-4"></div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ</button>
+        <button type="button" onclick="closeModal('custom-item-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
       </div>
     </form>
   </div>
@@ -721,7 +753,7 @@ let currentUser = null;
 let activeCategory = 'all';
 let activeDashTab = 'overview';
 let lastSyncedSnapshot = null; // آخر نسخة بيانات تمت مزامنتها مع Firebase (لتفادي إعادة معالجة نفس البيانات مرتين)
-const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal'];
+const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal'];
 function isAnyModalOpen(){
   return SYNC_SENSITIVE_MODAL_IDS.some(id=>{
     const el = document.getElementById(id);
@@ -743,7 +775,17 @@ function mergeSiteData(parsed){
     requests: parsed.requests || [],
     finance: parsed.finance || [],
     expenses: parsed.expenses || [],
-    customSections: parsed.customSections || []
+    customSections: (parsed.customSections || []).map(cs => {
+      if(cs.fields && cs.fields.length){
+        return { items: [], ...cs };
+      }
+      // توافق مع أقسام قديمة كانت تعتمد على خانة نص حرة واحدة (content)
+      const legacyField = { key:'content', label:'المحتوى', type:'longtext' };
+      const items = (cs.content && cs.content.trim())
+        ? [{ id:1, values:{ content: cs.content }, date:'' }]
+        : [];
+      return { ...cs, fields:[legacyField], items };
+    })
   };
 }
 async function loadData(){
@@ -1020,6 +1062,7 @@ function handleLogin(e){
 }
 function logout(){ currentUser=null; document.getElementById('dashboard').classList.add('hidden'); document.getElementById('public-site').classList.remove('hidden'); }
 function backToSite(e){ e.preventDefault(); document.getElementById('dashboard').classList.add('hidden'); document.getElementById('public-site').classList.remove('hidden'); }
+function toggleSidebar(){ document.getElementById('dash-sidebar').classList.toggle('hidden'); }
 
 // ---------- لوحة التحكم ----------
 function showDashboard(){
@@ -1088,10 +1131,6 @@ function renderDashContent(){
     const sec = siteData.customSections.find(s=>s.id===id);
     document.getElementById('dash-section-title').textContent = sec ? sec.title : siteData.terms.tab_overview;
     content.innerHTML = sec ? customSectionViewHTML(sec) : `<p class="text-sm text-stone">هذا القسم لم يعد موجوداً.</p>`;
-    if(sec){
-      const ta = document.getElementById('custom-section-content');
-      if(ta) ta.value = sec.content || '';
-    }
     return;
   }
   const titles = { overview: siteData.terms.tab_overview, services: siteData.terms.tab_services, employees: siteData.terms.tab_employees, labels: siteData.terms.tab_labels, requests: siteData.terms.tab_requests, finance: siteData.terms.tab_finance, sections: siteData.terms.tab_sections };
@@ -1278,7 +1317,7 @@ function requestsAdminHTML(){
   const statusColors = { 'قيد المراجعة':'bg-amber-100 text-amber-700', 'تم التواصل':'bg-emerald-100 text-emerald-700', 'مغلق':'bg-gray-200 text-gray-600' };
   const sortByNewest = arr => [...arr].sort((a,b)=> b.id - a.id);
   const canSetPrice = hasPermission(currentUser, 'finance');
-  const fmtMoney = n => Number(n||0).toLocaleString('ar-OM', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtMoney = n => Number(n||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   const renderTable = (items) => {
     if(items.length===0){
       return `<div class="bg-white border border-hairline rounded-xl p-5 text-center text-stone text-xs">لا توجد طلبات في هذه المساحة حتى الآن</div>`;
@@ -1425,7 +1464,7 @@ function financeAdminHTML(){
   const totalGeneralExpenses = generalExpenses.reduce((sum, x) => sum + (Number(x.amount)||0), 0);
   const totalExpense = totalProjectCost + totalGeneralExpenses;
   const netProfit = totalIncome - totalExpense;
-  const fmt = n => n.toLocaleString('ar-OM', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmt = n => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   const statCard = (icon, label, value, colorClass) => `
     <div class="bg-white border border-hairline rounded-xl p-5">
       <i class="fa-solid ${icon} ${colorClass||'text-bronze'} mb-3"></i>
@@ -1624,6 +1663,7 @@ function openCustomSectionModal(){
   document.getElementById('cs-id').value = '';
   document.getElementById('cs-title').value = '';
   document.getElementById('cs-icon').value = 'fa-folder';
+  document.getElementById('cs-fields-container').innerHTML = fieldRowHTML(null, '', 'longtext');
   openModal('custom-section-modal');
 }
 function editCustomSection(id){
@@ -1632,21 +1672,47 @@ function editCustomSection(id){
   document.getElementById('cs-id').value = cs.id;
   document.getElementById('cs-title').value = cs.title;
   document.getElementById('cs-icon').value = cs.icon || 'fa-folder';
+  const fields = cs.fields && cs.fields.length ? cs.fields : [{key:'content', label:'المحتوى', type:'longtext'}];
+  document.getElementById('cs-fields-container').innerHTML = fields.map(f => fieldRowHTML(f.key, f.label, f.type)).join('');
   openModal('custom-section-modal');
+}
+// تبني صف خانة واحد داخل نافذة إعداد القسم (اسم الخانة + نوعها + زر حذف)
+function fieldRowHTML(key, label, type){
+  const fkey = key || ('field_' + Date.now().toString(36) + Math.floor(Math.random()*1000));
+  return `
+  <div class="flex gap-2 items-center cs-field-row" data-field-key="${fkey}">
+    <input type="text" value="${(label||'').replace(/"/g,'&quot;')}" placeholder="اسم الخانة (مثال: السعر)" class="cs-field-label flex-1 text-sm border border-hairline rounded-lg px-3 py-2">
+    <select class="cs-field-type text-xs border border-hairline rounded-lg px-2 py-2">
+      <option value="text" ${type==='text'?'selected':''}>نص قصير</option>
+      <option value="number" ${type==='number'?'selected':''}>رقم / سعر</option>
+      <option value="longtext" ${(!type||type==='longtext')?'selected':''}>رسالة (نص طويل)</option>
+    </select>
+    <button type="button" onclick="this.closest('.cs-field-row').remove()" class="text-red-500 hover:text-red-700 px-1"><i class="fa-solid fa-trash"></i></button>
+  </div>`;
+}
+function addFieldRow(){
+  document.getElementById('cs-fields-container').insertAdjacentHTML('beforeend', fieldRowHTML());
 }
 async function saveCustomSection(e){
   e.preventDefault();
   const id = document.getElementById('cs-id').value;
+  const fields = Array.from(document.querySelectorAll('#cs-fields-container .cs-field-row')).map(row => ({
+    key: row.dataset.fieldKey,
+    label: row.querySelector('.cs-field-label').value.trim() || 'خانة',
+    type: row.querySelector('.cs-field-type').value
+  }));
+  if(fields.length === 0){ showToast('أضف خانة واحدة على الأقل لهذا القسم', 'error'); return; }
   const data = {
     title: document.getElementById('cs-title').value.trim(),
-    icon: document.getElementById('cs-icon').value.trim() || 'fa-folder'
+    icon: document.getElementById('cs-icon').value.trim() || 'fa-folder',
+    fields
   };
   if(id){
     const cs = siteData.customSections.find(x=>x.id===parseInt(id));
     Object.assign(cs, data);
   } else {
     const newId = siteData.customSections.length ? Math.max(...siteData.customSections.map(c=>c.id))+1 : 1;
-    siteData.customSections.push({id:newId, ...data, content:'', active:true});
+    siteData.customSections.push({id:newId, ...data, items:[], active:true});
   }
   await saveData();
   closeModal('custom-section-modal');
@@ -1663,7 +1729,7 @@ async function toggleCustomSectionActive(id){
 }
 async function deleteCustomSection(id){
   const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
-  if(!confirm(`هل تريد حذف القسم "${cs.title}" نهائياً؟ سيُحذف محتواه وتُلغى صلاحية الوصول إليه من جميع الموظفين.`)) return;
+  if(!confirm(`هل تريد حذف القسم "${cs.title}" نهائياً؟ سيُحذف كل محتواه وتُلغى صلاحية الوصول إليه من جميع الموظفين.`)) return;
   siteData.customSections = siteData.customSections.filter(x=>x.id!==id);
   siteData.employees.forEach(emp => { if(emp.permissions) delete emp.permissions[customSectionPermKey(id)]; });
   if(activeDashTab === 'custom-'+id) activeDashTab = 'overview';
@@ -1672,23 +1738,86 @@ async function deleteCustomSection(id){
   renderDashContent();
   showToast('تم حذف القسم');
 }
+// تعرض محتوى القسم كجدول ديناميكي حسب الخانات المحددة له، مع إمكانية إضافة/تعديل/حذف العناصر
 function customSectionViewHTML(cs){
   const canEdit = currentUser.role==='admin' || hasPermission(currentUser, customSectionPermKey(cs.id));
+  const fields = cs.fields && cs.fields.length ? cs.fields : [{key:'content', label:'المحتوى', type:'longtext'}];
+  const items = [...(cs.items||[])].sort((a,b)=> b.id - a.id);
+  const rows = items.map(item => `
+    <tr class="border-b border-hairline last:border-0 align-top">
+      ${fields.map(f => `<td class="py-3 px-3 text-sm ${f.type==='number' ? 'font-num' : ''} max-w-[220px] whitespace-pre-wrap">${(item.values && item.values[f.key]) || '—'}</td>`).join('')}
+      <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${item.date||''}</td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        ${canEdit ? `
+          <button onclick="openCustomItemModal(${cs.id}, ${item.id})" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="deleteCustomItem(${cs.id}, ${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : ''}
+      </td>
+    </tr>`).join('');
   return `
-    <div class="bg-white border border-hairline rounded-xl p-6">
-      <p class="text-sm text-stone mb-3 leading-relaxed">هذا محتوى قسم "<b>${cs.title}</b>"، ويظهر لكل من يملك صلاحية الوصول إليه فقط.</p>
-      <textarea id="custom-section-content" rows="14" ${canEdit?'':'disabled'} class="w-full text-sm border border-hairline rounded-lg px-3 py-3 leading-relaxed"></textarea>
-      ${canEdit ? `
-      <button onclick="saveCustomSectionContent(${cs.id})" class="mt-4 bg-bronze text-ink font-bold text-sm px-6 py-3 rounded-lg">
-        <i class="fa-solid fa-floppy-disk ml-1"></i> حفظ المحتوى
-      </button>` : ''}
+    <p class="text-sm text-stone mb-4 leading-relaxed">هذا محتوى قسم "<b>${cs.title}</b>"، ويظهر لكل من يملك صلاحية الوصول إليه فقط.</p>
+    ${canEdit ? `
+    <div class="flex justify-end mb-4">
+      <button onclick="openCustomItemModal(${cs.id})" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة عنصر</button>
+    </div>` : ''}
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          ${fields.map(f=>`<th class="py-3 px-3 text-right">${f.label}</th>`).join('')}
+          <th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="${fields.length+2}" class="text-center py-8 text-stone">لا توجد عناصر مضافة بعد</td></tr>`}</tbody>
+      </table>
     </div>`;
 }
-async function saveCustomSectionContent(id){
-  const cs = siteData.customSections.find(x=>x.id===id); if(!cs) return;
-  cs.content = document.getElementById('custom-section-content').value;
+function openCustomItemModal(sectionId, itemId){
+  const cs = siteData.customSections.find(s=>s.id===sectionId); if(!cs) return;
+  document.getElementById('ci-section-id').value = sectionId;
+  document.getElementById('ci-item-id').value = itemId || '';
+  document.getElementById('custom-item-modal-title').textContent = itemId ? 'تعديل العنصر' : 'إضافة عنصر';
+  const item = itemId ? (cs.items||[]).find(i=>i.id===itemId) : null;
+  const fields = cs.fields && cs.fields.length ? cs.fields : [{key:'content', label:'المحتوى', type:'longtext'}];
+  const container = document.getElementById('custom-item-fields');
+  container.innerHTML = fields.map(f => {
+    const val = item && item.values ? (item.values[f.key] || '') : '';
+    if(f.type === 'longtext'){
+      return `<div><label class="block text-xs font-bold text-stone mb-1.5">${f.label}</label><textarea data-field-key="${f.key}" rows="3" class="custom-item-input w-full text-sm border border-hairline rounded-lg px-3 py-2.5">${val}</textarea></div>`;
+    } else if(f.type === 'number'){
+      return `<div><label class="block text-xs font-bold text-stone mb-1.5">${f.label}</label><input data-field-key="${f.key}" type="text" inputmode="decimal" oninput="restrictDigits(this, true)" value="${val}" class="custom-item-input w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num"></div>`;
+    }
+    return `<div><label class="block text-xs font-bold text-stone mb-1.5">${f.label}</label><input data-field-key="${f.key}" type="text" value="${val}" class="custom-item-input w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></div>`;
+  }).join('');
+  openModal('custom-item-modal');
+}
+async function saveCustomItem(e){
+  e.preventDefault();
+  const sectionId = parseInt(document.getElementById('ci-section-id').value);
+  const itemIdRaw = document.getElementById('ci-item-id').value;
+  const itemId = itemIdRaw ? parseInt(itemIdRaw) : null;
+  const cs = siteData.customSections.find(s=>s.id===sectionId); if(!cs) return;
+  const values = {};
+  document.querySelectorAll('#custom-item-fields .custom-item-input').forEach(inp => { values[inp.dataset.fieldKey] = inp.value.trim(); });
+  const now = new Date();
+  const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0');
+  if(!cs.items) cs.items = [];
+  if(itemId){
+    const item = cs.items.find(i=>i.id===itemId);
+    if(item) item.values = values;
+  } else {
+    const newId = cs.items.length ? Math.max(...cs.items.map(i=>i.id))+1 : 1;
+    cs.items.push({id:newId, values, date:dateStr});
+  }
   await saveData();
-  showToast('تم حفظ محتوى القسم بنجاح');
+  closeModal('custom-item-modal');
+  renderDashContent();
+  showToast('تم الحفظ بنجاح');
+}
+async function deleteCustomItem(sectionId, itemId){
+  if(!confirm('هل تريد حذف هذا العنصر نهائياً؟')) return;
+  const cs = siteData.customSections.find(s=>s.id===sectionId); if(!cs) return;
+  cs.items = (cs.items||[]).filter(i=>i.id!==itemId);
+  await saveData();
+  renderDashContent();
+  showToast('تم الحذف');
 }
 
 const LABEL_GROUPS = [
@@ -1941,7 +2070,7 @@ async function saveSelfPassword(e){
 // إغلاق أي نافذة مفتوحة بالضغط على مفتاح Escape
 document.addEventListener('keydown', (e)=>{
   if(e.key !== 'Escape') return;
-  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal'].forEach(id=>{
+  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && !el.classList.contains('hidden')) closeModal(id);
   });
