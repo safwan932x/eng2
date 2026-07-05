@@ -432,6 +432,58 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
   </div>
 </div>
 
+<!-- نافذة تحديد سعر/تكلفة الطلب من تبويب الطلبات (تتحدث تلقائياً في الإدارة المالية) -->
+<div id="price-modal" onclick="if(event.target===this) closeModal('price-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="price-modal-title">تحديد سعر الطلب</h4>
+      <button onclick="closeModal('price-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="savePriceEntry(event)" class="p-6 space-y-4">
+      <input type="hidden" id="price-req-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">سعر/تكلفة الطلب على العميل</label>
+        <input id="price-amount" type="text" inputmode="decimal" required oninput="restrictDigits(this, true)" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        <p class="text-[11px] text-stone mt-1.5">راح يُضاف هذا المبلغ تلقائياً كدخل في الإدارة المالية باسمك كموظف مسؤول</p>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ السعر</button>
+        <button type="button" onclick="closeModal('price-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل مصروف عام (مشتريات وأشياء ندفع ثمنها) -->
+<div id="expense-modal" onclick="if(event.target===this) closeModal('expense-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg" id="expense-modal-title">إضافة مصروف</h4>
+      <button onclick="closeModal('expense-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveExpense(event)" class="p-6 space-y-4">
+      <input type="hidden" id="exp-id">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">بيان المصروف (شنو اشتريتوه أو دفعتوه)</label>
+        <input id="exp-title" required placeholder="مثال: اشتراك برنامج تصميم" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">المبلغ</label>
+        <input id="exp-amount" type="text" inputmode="decimal" required value="0" oninput="restrictDigits(this, true)" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">ملاحظات (اختياري)</label>
+        <textarea id="exp-notes" rows="2" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ المصروف</button>
+        <button type="button" onclick="closeModal('expense-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
 <!-- نافذة إضافة/تعديل قسم مخصص في القائمة الجانبية -->
 <div id="custom-section-modal" onclick="if(event.target===this) closeModal('custom-section-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
@@ -568,6 +620,11 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_message_label">تفاصيل الطلب</label>
         <textarea id="req-message" rows="3" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
       </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">إرفاق صور أو ملف (اختياري)</label>
+        <input id="req-attachments" type="file" multiple accept="image/*,.pdf,.doc,.docx" class="w-full text-xs border border-hairline rounded-lg px-3 py-2.5 file:ml-2 file:border-0 file:bg-travertine-2 file:rounded-md file:px-2.5 file:py-1 file:text-xs file:font-bold">
+        <p class="text-[11px] text-stone mt-1.5">حتى 3 ملفات، بحجم أقصى 1.5 ميجابايت لكل ملف</p>
+      </div>
       <button type="submit" class="w-full bg-bronze text-ink font-bold text-sm py-3 rounded-lg">
         <span data-term="request_submit_btn">إرسال الطلب</span>
       </button>
@@ -659,12 +716,12 @@ const DEFAULT_EMPLOYEES = [
   {id:2, name:"موظف الاستوديو", jobTitle:"مصمم داخلي", username:"employee1", password:"12345", role:"employee", active:true, permissions:{requests:true, finance:false}}
 ];
 
-let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], customSections:[] };
+let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], expenses:[], customSections:[] };
 let currentUser = null;
 let activeCategory = 'all';
 let activeDashTab = 'overview';
 let lastSyncedSnapshot = null; // آخر نسخة بيانات تمت مزامنتها مع Firebase (لتفادي إعادة معالجة نفس البيانات مرتين)
-const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal'];
+const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal'];
 function isAnyModalOpen(){
   return SYNC_SENSITIVE_MODAL_IDS.some(id=>{
     const el = document.getElementById(id);
@@ -685,6 +742,7 @@ function mergeSiteData(parsed){
     })),
     requests: parsed.requests || [],
     finance: parsed.finance || [],
+    expenses: parsed.expenses || [],
     customSections: parsed.customSections || []
   };
 }
@@ -879,13 +937,44 @@ function openRequestModal(prefillCategory){
   document.getElementById('req-phone-country').value = '+968';
   document.getElementById('req-email').value = '';
   document.getElementById('req-message').value = '';
+  document.getElementById('req-attachments').value = '';
   resetEmailVerification();
   openModal('request-modal');
+}
+// تقرأ ملف واحد وتحوّله إلى Data URL (نص) عشان نقدر نخزنه ضمن بيانات الطلب مباشرة
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('تعذّرت قراءة الملف'));
+    reader.readAsDataURL(file);
+  });
+}
+// تتحقق من عدد وحجم الملفات المرفقة (اختيارية) وتحوّلها لصيغة قابلة للتخزين
+async function collectAttachments(){
+  const files = Array.from(document.getElementById('req-attachments').files || []);
+  if(files.length === 0) return [];
+  if(files.length > 3){ throw new Error('يمكن إرفاق 3 ملفات كحد أقصى'); }
+  const MAX_SIZE = 1.5 * 1024 * 1024; // 1.5 ميجابايت لكل ملف
+  const result = [];
+  for(const f of files){
+    if(f.size > MAX_SIZE){ throw new Error(`حجم الملف "${f.name}" أكبر من 1.5 ميجابايت`); }
+    const dataUrl = await readFileAsDataURL(f);
+    result.push({ name: f.name, type: f.type, dataUrl });
+  }
+  return result;
 }
 async function submitRequest(e){
   e.preventDefault();
   if(!emailVerified || document.getElementById('req-email').value.trim() !== verifiedEmail){
     showToast('لازم تتحقق من بريدك الإلكتروني عبر الرمز المرسل قبل إرسال الطلب', 'error');
+    return;
+  }
+  let attachments = [];
+  try{
+    attachments = await collectAttachments();
+  }catch(err){
+    showToast(err.message, 'error');
     return;
   }
   const newId = siteData.requests.length ? Math.max(...siteData.requests.map(r=>r.id))+1 : 1;
@@ -898,9 +987,14 @@ async function submitRequest(e){
     email: verifiedEmail,
     category: document.getElementById('req-category').value,
     message: document.getElementById('req-message').value.trim(),
+    attachments: attachments,
     date: dateStr,
     status: 'قيد المراجعة',
-    seen: false
+    seen: false,
+    price: null,
+    pricedBy: null,
+    pricedAt: null,
+    financeEntryId: null
   });
   await saveData();
   closeModal('request-modal');
@@ -1183,6 +1277,8 @@ function employeesAdminHTML(){
 function requestsAdminHTML(){
   const statusColors = { 'قيد المراجعة':'bg-amber-100 text-amber-700', 'تم التواصل':'bg-emerald-100 text-emerald-700', 'مغلق':'bg-gray-200 text-gray-600' };
   const sortByNewest = arr => [...arr].sort((a,b)=> b.id - a.id);
+  const canSetPrice = hasPermission(currentUser, 'finance');
+  const fmtMoney = n => Number(n||0).toLocaleString('ar-OM', {minimumFractionDigits:2, maximumFractionDigits:2});
   const renderTable = (items) => {
     if(items.length===0){
       return `<div class="bg-white border border-hairline rounded-xl p-5 text-center text-stone text-xs">لا توجد طلبات في هذه المساحة حتى الآن</div>`;
@@ -1194,8 +1290,26 @@ function requestsAdminHTML(){
           <p class="font-num text-xs text-stone">${r.phone}</p>
           ${r.email ? `<p class="text-xs text-stone" dir="ltr">${r.email}</p>` : ''}
         </td>
-        <td class="py-3 px-3 text-xs max-w-[240px]">${r.message || '—'}</td>
+        <td class="py-3 px-3 text-xs max-w-[240px]">
+          ${r.message || '—'}
+          ${(r.attachments && r.attachments.length) ? `
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              ${r.attachments.map(a => a.type && a.type.startsWith('image/')
+                ? `<a href="${a.dataUrl}" target="_blank" title="${a.name}"><img src="${a.dataUrl}" class="w-12 h-12 object-cover rounded-md border border-hairline"></a>`
+                : `<a href="${a.dataUrl}" download="${a.name}" class="text-[11px] font-bold text-bronze-dark underline block"><i class="fa-solid fa-paperclip"></i> ${a.name}</a>`
+              ).join('')}
+            </div>` : ''}
+        </td>
         <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${r.date}</td>
+        <td class="py-3 px-3 whitespace-nowrap">
+          ${r.price != null ? `
+            <p class="font-num font-bold">${fmtMoney(r.price)}</p>
+            <p class="text-[10px] text-stone">بواسطة ${r.pricedBy || '—'}</p>
+            ${canSetPrice ? `<button onclick="openPriceModal(${r.id})" class="text-[10px] text-bronze-dark underline mt-0.5">تعديل السعر</button>` : ''}
+          ` : (canSetPrice
+            ? `<button onclick="openPriceModal(${r.id})" class="text-[11px] font-bold bg-ink text-paper px-2.5 py-1.5 rounded-lg whitespace-nowrap">تحديد السعر</button>`
+            : `<span class="text-stone text-xs">لم يُحدد</span>`)}
+        </td>
         <td class="py-3 px-3">
           <select onchange="updateRequestStatus(${r.id}, this.value)" class="text-[11px] font-bold rounded-full px-2.5 py-1 border-0 ${statusColors[r.status]||'bg-gray-100'}">
             <option ${r.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
@@ -1211,7 +1325,7 @@ function requestsAdminHTML(){
       <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
         <table class="w-full text-sm">
           <thead class="bg-travertine-2 text-stone text-xs"><tr>
-            <th class="py-3 px-3 text-right">العميل</th><th class="py-3 px-3 text-right">التفاصيل</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+            <th class="py-3 px-3 text-right">العميل</th><th class="py-3 px-3 text-right">التفاصيل</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3 text-right">السعر</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1253,6 +1367,10 @@ async function updateRequestStatus(id, status){
 }
 async function deleteRequest(id){
   if(!confirm('هل تريد حذف هذا الطلب نهائياً؟')) return;
+  const r = siteData.requests.find(x=>x.id===id);
+  if(r && r.financeEntryId){
+    siteData.finance = siteData.finance.filter(f=>f.id!==r.financeEntryId);
+  }
   siteData.requests = siteData.requests.filter(x=>x.id!==id);
   await saveData();
   renderDashContent();
@@ -1260,11 +1378,52 @@ async function deleteRequest(id){
   showToast('تم حذف الطلب');
 }
 
+// ---------- تحديد سعر الطلب من تبويب الطلبات (يتطلب صلاحية الإدارة المالية) ----------
+function openPriceModal(id){
+  if(!hasPermission(currentUser, 'finance')){ showToast('تحتاج صلاحية الإدارة المالية لتحديد سعر الطلبات', 'error'); return; }
+  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+  document.getElementById('price-req-id').value = id;
+  document.getElementById('price-amount').value = r.price != null ? r.price : '';
+  document.getElementById('price-modal-title').textContent = r.price != null ? 'تعديل سعر الطلب' : 'تحديد سعر الطلب';
+  openModal('price-modal');
+}
+async function savePriceEntry(e){
+  e.preventDefault();
+  if(!hasPermission(currentUser, 'finance')){ showToast('تحتاج صلاحية الإدارة المالية لتحديد سعر الطلبات', 'error'); return; }
+  const id = parseInt(document.getElementById('price-req-id').value);
+  const amount = parseFloat(document.getElementById('price-amount').value) || 0;
+  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+  const now = new Date();
+  const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0');
+  r.price = amount;
+  r.pricedBy = currentUser.name;
+  r.pricedAt = dateStr;
+  const entryTitle = `طلب عميل: ${r.name} — ${catLabel(r.category)}`;
+  const entryNotes = `تم تحديد السعر من تبويب الطلبات بواسطة ${currentUser.name}`;
+  let entry = r.financeEntryId ? siteData.finance.find(f=>f.id===r.financeEntryId) : null;
+  if(entry){
+    entry.title = entryTitle;
+    entry.paid = amount;
+    entry.notes = entryNotes;
+  } else {
+    const newId = siteData.finance.length ? Math.max(...siteData.finance.map(f=>f.id))+1 : 1;
+    siteData.finance.push({ id:newId, title:entryTitle, cost:0, paid:amount, notes:entryNotes, date:dateStr, requestId:r.id });
+    r.financeEntryId = newId;
+  }
+  await saveData();
+  closeModal('price-modal');
+  renderDashContent();
+  showToast('تم حفظ سعر الطلب، وانضاف تلقائياً كدخل في الإدارة المالية');
+}
+
 // ---------- الإدارة المالية (حسب الصلاحية) ----------
 function financeAdminHTML(){
   const entries = siteData.finance || [];
+  const generalExpenses = siteData.expenses || [];
   const totalIncome = entries.reduce((sum, x) => sum + (Number(x.paid)||0), 0);
-  const totalExpense = entries.reduce((sum, x) => sum + (Number(x.cost)||0), 0);
+  const totalProjectCost = entries.reduce((sum, x) => sum + (Number(x.cost)||0), 0);
+  const totalGeneralExpenses = generalExpenses.reduce((sum, x) => sum + (Number(x.amount)||0), 0);
+  const totalExpense = totalProjectCost + totalGeneralExpenses;
   const netProfit = totalIncome - totalExpense;
   const fmt = n => n.toLocaleString('ar-OM', {minimumFractionDigits:2, maximumFractionDigits:2});
   const statCard = (icon, label, value, colorClass) => `
@@ -1289,23 +1448,94 @@ function financeAdminHTML(){
       </td>
     </tr>`;
   }).join('');
+  const expenseRows = [...generalExpenses].sort((a,b)=> b.id - a.id).map(x => `
+    <tr class="border-b border-hairline last:border-0 align-top">
+      <td class="py-3 px-3 font-bold">${x.title}</td>
+      <td class="py-3 px-3 font-num text-xs text-red-600 font-bold">${fmt(Number(x.amount)||0)}</td>
+      <td class="py-3 px-3 text-xs text-stone max-w-[220px]">${x.notes || '—'}</td>
+      <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${x.date||''}</td>
+      <td class="py-3 px-3 text-left whitespace-nowrap">
+        <button onclick="editExpense(${x.id})" class="text-bronze hover:text-ink ml-3"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteExpense(${x.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
   return `
-    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${statCard('fa-arrow-trend-up','إجمالي الدخل (المدفوعات)', totalIncome, 'text-emerald-700')}
-      ${statCard('fa-arrow-trend-down','إجمالي المصروف (التكاليف)', totalExpense, 'text-red-600')}
+      ${statCard('fa-drafting-compass','تكاليف المشاريع', totalProjectCost, 'text-red-600')}
+      ${statCard('fa-basket-shopping','مصاريف عامة (مشتريات)', totalGeneralExpenses, 'text-red-600')}
       ${statCard('fa-scale-balanced','صافي الأرباح', netProfit, netProfit>=0 ? 'text-emerald-700' : 'text-red-600')}
     </div>
-    <div class="flex justify-end mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-display text-base">القيود المالية للمشاريع</h3>
       <button onclick="openFinanceModal()" class="bg-bronze text-ink text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة قيد مالي</button>
     </div>
-    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin mb-8">
       <table class="w-full text-sm">
         <thead class="bg-travertine-2 text-stone text-xs"><tr>
           <th class="py-3 px-3 text-right">البيان</th><th class="py-3 px-3 text-right">التكلفة</th><th class="py-3 px-3 text-right">المدفوع</th><th class="py-3 px-3 text-right">الربح</th><th class="py-3 px-3 text-right">ملاحظات</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3"></th>
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="7" class="text-center py-8 text-stone">لا توجد قيود مالية مضافة بعد</td></tr>`}</tbody>
       </table>
+    </div>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-display text-base">المصاريف العامة (مشتريات وأشياء ندفع ثمنها)</h3>
+      <button onclick="openExpenseModal()" class="bg-ink text-paper text-sm font-bold px-4 py-2.5 rounded-lg"><i class="fa-solid fa-plus ml-1"></i> إضافة مصروف</button>
+    </div>
+    <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
+      <table class="w-full text-sm">
+        <thead class="bg-travertine-2 text-stone text-xs"><tr>
+          <th class="py-3 px-3 text-right">البيان</th><th class="py-3 px-3 text-right">المبلغ</th><th class="py-3 px-3 text-right">ملاحظات</th><th class="py-3 px-3 text-right">التاريخ</th><th class="py-3 px-3"></th>
+        </tr></thead>
+        <tbody>${expenseRows || `<tr><td colspan="5" class="text-center py-8 text-stone">لا توجد مصاريف مضافة بعد</td></tr>`}</tbody>
+      </table>
     </div>`;
+}
+function openExpenseModal(){
+  document.getElementById('expense-modal-title').textContent = 'إضافة مصروف';
+  document.getElementById('exp-id').value = '';
+  document.getElementById('exp-title').value = '';
+  document.getElementById('exp-amount').value = 0;
+  document.getElementById('exp-notes').value = '';
+  openModal('expense-modal');
+}
+function editExpense(id){
+  const x = siteData.expenses.find(f=>f.id===id); if(!x) return;
+  document.getElementById('expense-modal-title').textContent = 'تعديل المصروف';
+  document.getElementById('exp-id').value = x.id;
+  document.getElementById('exp-title').value = x.title;
+  document.getElementById('exp-amount').value = x.amount;
+  document.getElementById('exp-notes').value = x.notes || '';
+  openModal('expense-modal');
+}
+async function saveExpense(e){
+  e.preventDefault();
+  const id = document.getElementById('exp-id').value;
+  const now = new Date();
+  const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0');
+  const data = {
+    title: document.getElementById('exp-title').value.trim(),
+    amount: parseFloat(document.getElementById('exp-amount').value) || 0,
+    notes: document.getElementById('exp-notes').value.trim()
+  };
+  if(id){
+    const x = siteData.expenses.find(f=>f.id===parseInt(id));
+    Object.assign(x, data);
+  } else {
+    const newId = siteData.expenses.length ? Math.max(...siteData.expenses.map(f=>f.id))+1 : 1;
+    siteData.expenses.push({id:newId, ...data, date: dateStr});
+  }
+  await saveData();
+  closeModal('expense-modal');
+  renderDashContent();
+  showToast('تم حفظ المصروف بنجاح');
+}
+async function deleteExpense(id){
+  if(!confirm('هل تريد حذف هذا المصروف نهائياً؟')) return;
+  siteData.expenses = siteData.expenses.filter(f=>f.id!==id);
+  await saveData();
+  renderDashContent();
+  showToast('تم حذف المصروف');
 }
 function openFinanceModal(){
   document.getElementById('finance-modal-title').textContent = 'إضافة قيد مالي';
@@ -1711,7 +1941,7 @@ async function saveSelfPassword(e){
 // إغلاق أي نافذة مفتوحة بالضغط على مفتاح Escape
 document.addEventListener('keydown', (e)=>{
   if(e.key !== 'Escape') return;
-  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal'].forEach(id=>{
+  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && !el.classList.contains('hidden')) closeModal(id);
   });
