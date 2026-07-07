@@ -297,22 +297,22 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-bold text-stone">التصنيف</label>
-            <button type="button" onclick="openCategoryModal()" class="text-bronze-dark hover:underline text-[11px] font-bold"><i class="fa-solid fa-plus"></i> تصنيف جديد</button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="openCategoryModal()" class="text-bronze-dark hover:underline text-[11px] font-bold"><i class="fa-solid fa-plus"></i></button>
+              <button type="button" onclick="deleteCategory(document.getElementById('svc-category').value)" class="text-red-500 hover:text-red-700 text-[11px] font-bold"><i class="fa-solid fa-trash"></i></button>
+            </div>
           </div>
           <select id="svc-category" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone mb-1.5">الأيقونة</label>
-          <select id="svc-icon" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
-            <option value="fa-couch">أثاث / داخلي</option>
-            <option value="fa-briefcase">مكاتب</option>
-            <option value="fa-tree">حدائق</option>
-            <option value="fa-house">مبنى</option>
-            <option value="fa-building">برج / واجهة</option>
-            <option value="fa-landmark">طراز كلاسيكي</option>
-            <option value="fa-drafting-compass">مخططات</option>
-            <option value="fa-ruler-combined">قياسات وتراخيص</option>
-          </select>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-stone">الأيقونة</label>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="openIconModal()" class="text-bronze-dark hover:underline text-[11px] font-bold"><i class="fa-solid fa-plus"></i></button>
+              <button type="button" onclick="deleteServiceIcon(document.getElementById('svc-icon').value)" class="text-red-500 hover:text-red-700 text-[11px] font-bold"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <select id="svc-icon" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
         </div>
       </div>
       <div>
@@ -563,6 +563,36 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
   </div>
 </div>
 
+<!-- نافذة إضافة أيقونة جديدة لمكتبة أيقونات الخدمات -->
+<div id="icon-modal" onclick="if(event.target===this) closeModal('icon-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
+      <h4 class="font-display text-lg">إضافة أيقونة جديدة</h4>
+      <button onclick="closeModal('icon-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveServiceIcon(event)" class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم أيقونة Font Awesome (بدون fa-solid)</label>
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 flex-shrink-0 rounded-lg bg-travertine-2 flex items-center justify-center">
+            <i id="icon-preview" class="fa-solid fa-icons text-lg text-bronze"></i>
+          </div>
+          <input id="icon-class" required placeholder="مثال: fa-lamp" oninput="document.getElementById('icon-preview').className='fa-solid '+(this.value.trim()||'fa-icons')+' text-lg text-bronze'" class="flex-1 text-sm border border-hairline rounded-lg px-3 py-2.5 font-num" dir="ltr">
+        </div>
+        <p class="text-[11px] text-stone mt-1.5">تقدر تدور على اسم أي أيقونة بموقع fontawesome.com/icons</p>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">اسم الأيقونة (يظهر بالقائمة)</label>
+        <input id="icon-label" required placeholder="مثال: إضاءة" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-bronze text-ink font-bold text-sm py-3 rounded-lg">حفظ الأيقونة</button>
+        <button type="button" onclick="closeModal('icon-modal')" class="flex-1 border border-hairline text-stone font-bold text-sm py-3 rounded-lg hover:bg-gray-50">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="self-password-modal" onclick="if(event.target===this) closeModal('self-password-modal')" class="hidden fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
     <div class="bg-ink text-paper px-6 py-4 flex items-center justify-between">
@@ -688,6 +718,16 @@ emailjs.init({ publicKey: 'LnWixuGnn4HfPqx1y' });
 
 // التصنيفات أصبحت ديناميكية: يمكن لمدير النظام إضافة تصنيف جديد من تبويب "إدارة الخدمات"
 // وسيظهر تلقائياً كخيار عند إضافة خدمة، وكمساحة مستقلة في تبويب "الطلبات"
+const DEFAULT_SERVICE_ICONS = [
+  {key:'fa-couch', label:'أثاث / داخلي'},
+  {key:'fa-briefcase', label:'مكاتب'},
+  {key:'fa-tree', label:'حدائق'},
+  {key:'fa-house', label:'مبنى'},
+  {key:'fa-building', label:'برج / واجهة'},
+  {key:'fa-landmark', label:'طراز كلاسيكي'},
+  {key:'fa-drafting-compass', label:'مخططات'},
+  {key:'fa-ruler-combined', label:'قياسات وتراخيص'}
+];
 const DEFAULT_CATEGORIES = [
   {key:'interior', label:"تصميم داخلي"},
   {key:'exterior', label:"تصميم خارجي"},
@@ -748,12 +788,12 @@ const DEFAULT_EMPLOYEES = [
   {id:2, name:"موظف الاستوديو", jobTitle:"مصمم داخلي", username:"employee1", password:"12345", role:"employee", active:true, permissions:{requests:true, finance:false}}
 ];
 
-let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], expenses:[], customSections:[] };
+let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], serviceIcons:[...DEFAULT_SERVICE_ICONS], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], expenses:[], customSections:[] };
 let currentUser = null;
 let activeCategory = 'all';
 let activeDashTab = 'overview';
 let lastSyncedSnapshot = null; // آخر نسخة بيانات تمت مزامنتها مع Firebase (لتفادي إعادة معالجة نفس البيانات مرتين)
-const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal'];
+const SYNC_SENSITIVE_MODAL_IDS = ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal','icon-modal'];
 function isAnyModalOpen(){
   return SYNC_SENSITIVE_MODAL_IDS.some(id=>{
     const el = document.getElementById(id);
@@ -768,6 +808,7 @@ function mergeSiteData(parsed){
     terms: {...DEFAULT_TERMS, ...(parsed.terms||{})},
     services: parsed.services || [...DEFAULT_SERVICES],
     categories: parsed.categories || [...DEFAULT_CATEGORIES],
+    serviceIcons: parsed.serviceIcons || [...DEFAULT_SERVICE_ICONS],
     employees: (parsed.employees || [...DEFAULT_EMPLOYEES]).map(e => ({
       ...e,
       permissions: { requests:true, finance:false, ...(e.permissions||{}) }
@@ -1253,12 +1294,16 @@ async function saveCategory(e){
   showToast('تم حفظ التصنيف بنجاح');
 }
 async function deleteCategory(key){
+  if(!key){ showToast('اختر تصنيفاً أولاً', 'error'); return; }
   const usedByServices = siteData.services.some(s=>s.category===key);
   if(usedByServices){ showToast('لا يمكن حذف هذا التصنيف لوجود خدمات مرتبطة به، عدّل أو احذف تلك الخدمات أولاً', 'error'); return; }
   const cat = siteData.categories.find(c=>c.key===key); if(!cat) return;
   if(!confirm(`هل تريد حذف تصنيف "${cat.label}" نهائياً؟`)) return;
   siteData.categories = siteData.categories.filter(c=>c.key!==key);
   await saveData();
+  if(document.getElementById('service-modal') && !document.getElementById('service-modal').classList.contains('hidden')){
+    renderServiceCategoryOptions(siteData.categories[0] ? siteData.categories[0].key : '');
+  }
   renderDashContent();
   renderCategoryFilters();
   renderServicesGrid();
@@ -1864,12 +1909,55 @@ function renderServiceCategoryOptions(selected){
   const sel = document.getElementById('svc-category');
   sel.innerHTML = siteData.categories.map(c => `<option value="${c.key}" ${c.key===selected?'selected':''}>${c.label}</option>`).join('');
 }
+function renderServiceIconOptions(selected){
+  const sel = document.getElementById('svc-icon');
+  sel.innerHTML = siteData.serviceIcons.map(i => `<option value="${i.key}" ${i.key===selected?'selected':''}>${i.label}</option>`).join('');
+}
+function openIconModal(){
+  document.getElementById('icon-class').value = '';
+  document.getElementById('icon-label').value = '';
+  document.getElementById('icon-preview').className = 'fa-solid fa-icons text-lg text-bronze';
+  openModal('icon-modal');
+}
+async function saveServiceIcon(e){
+  e.preventDefault();
+  let key = document.getElementById('icon-class').value.trim();
+  if(!key.startsWith('fa-')) key = 'fa-' + key.replace(/^fa-/,'');
+  const label = document.getElementById('icon-label').value.trim();
+  if(siteData.serviceIcons.some(i=>i.key===key)){
+    showToast('هذه الأيقونة موجودة بالفعل بالقائمة', 'error');
+    return;
+  }
+  siteData.serviceIcons.push({key, label});
+  await saveData();
+  closeModal('icon-modal');
+  if(document.getElementById('service-modal') && !document.getElementById('service-modal').classList.contains('hidden')){
+    renderServiceIconOptions(key);
+  }
+  renderDashContent();
+  showToast('تم حفظ الأيقونة بنجاح');
+}
+async function deleteServiceIcon(key){
+  if(!key){ showToast('اختر أيقونة أولاً', 'error'); return; }
+  const usedByServices = siteData.services.some(s=>s.icon===key);
+  if(usedByServices){ showToast('لا يمكن حذف هذه الأيقونة لوجود خدمات تستخدمها، غيّر أيقونة تلك الخدمات أولاً', 'error'); return; }
+  const icon = siteData.serviceIcons.find(i=>i.key===key); if(!icon) return;
+  if(siteData.serviceIcons.length <= 1){ showToast('لازم تبقى أيقونة واحدة على الأقل بالقائمة', 'error'); return; }
+  if(!confirm(`هل تريد حذف أيقونة "${icon.label}" نهائياً؟`)) return;
+  siteData.serviceIcons = siteData.serviceIcons.filter(i=>i.key!==key);
+  await saveData();
+  if(document.getElementById('service-modal') && !document.getElementById('service-modal').classList.contains('hidden')){
+    renderServiceIconOptions(siteData.serviceIcons[0] ? siteData.serviceIcons[0].key : '');
+  }
+  renderDashContent();
+  showToast('تم حذف الأيقونة');
+}
 function openServiceModal(){
   document.getElementById('service-modal-title').textContent = 'إضافة خدمة';
   document.getElementById('svc-id').value = '';
   document.getElementById('svc-title').value = '';
   renderServiceCategoryOptions(siteData.categories[0] ? siteData.categories[0].key : '');
-  document.getElementById('svc-icon').value = 'fa-couch';
+  renderServiceIconOptions(siteData.serviceIcons[0] ? siteData.serviceIcons[0].key : '');
   document.getElementById('svc-desc').value = '';
   document.getElementById('svc-active').checked = true;
   openModal('service-modal');
@@ -1880,7 +1968,7 @@ function editService(id){
   document.getElementById('svc-id').value = s.id;
   document.getElementById('svc-title').value = s.title;
   renderServiceCategoryOptions(s.category);
-  document.getElementById('svc-icon').value = s.icon;
+  renderServiceIconOptions(s.icon);
   document.getElementById('svc-desc').value = s.desc;
   document.getElementById('svc-active').checked = s.active;
   openModal('service-modal');
@@ -2070,7 +2158,7 @@ async function saveSelfPassword(e){
 // إغلاق أي نافذة مفتوحة بالضغط على مفتاح Escape
 document.addEventListener('keydown', (e)=>{
   if(e.key !== 'Escape') return;
-  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal'].forEach(id=>{
+  ['login-modal','service-modal','employee-modal','password-modal','self-password-modal','request-modal','finance-modal','custom-section-modal','category-modal','price-modal','expense-modal','custom-item-modal','icon-modal'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && !el.classList.contains('hidden')) closeModal(id);
   });
