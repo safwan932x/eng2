@@ -316,6 +316,21 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
         </div>
       </div>
       <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">صورة الخدمة (اختياري)</label>
+        <div class="flex items-center gap-3">
+          <div class="w-16 h-16 rounded-lg bg-travertine-2 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <img id="svc-image-preview" src="" class="hidden w-full h-full object-cover">
+            <i id="svc-image-placeholder" class="fa-solid fa-image text-stone"></i>
+          </div>
+          <div class="flex-1">
+            <input id="svc-image-file" type="file" accept="image/*" onchange="previewServiceImage(event)" class="w-full text-xs border border-hairline rounded-lg px-2 py-2 file:ml-2 file:border-0 file:bg-travertine-2 file:rounded-md file:px-2.5 file:py-1 file:text-xs file:font-bold">
+            <button type="button" onclick="removeServiceImage()" class="text-[11px] text-red-500 hover:underline mt-1">إزالة الصورة</button>
+          </div>
+        </div>
+        <input type="hidden" id="svc-image-data">
+        <p class="text-[11px] text-stone mt-1.5">تظهر هذي الصورة للزبون بقائمة الخدمات وعند تقديم الطلب — الحد الأقصى 1.5 ميجابايت</p>
+      </div>
+      <div>
         <label class="block text-xs font-bold text-stone mb-1.5">الوصف</label>
         <textarea id="svc-desc" rows="3" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
       </div>
@@ -621,6 +636,7 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
       <button onclick="closeModal('request-modal')" class="hover:text-bronze"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form onsubmit="submitRequest(event)" class="p-6 space-y-4">
+      <div id="req-service-preview" class="hidden items-center gap-3 bg-travertine-2 rounded-lg p-3 -mt-1"></div>
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_name_label">الاسم</label>
         <input id="req-name" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
@@ -927,16 +943,19 @@ function renderServicesGrid(){
     return;
   }
   grid.innerHTML = items.map(s => `
-    <div class="card-lift border border-hairline rounded-xl p-6 bg-white/60">
-      <div class="w-11 h-11 rounded-lg bg-ink text-bronze flex items-center justify-center mb-4">
-        <i class="fa-solid ${s.icon}"></i>
+    <div class="card-lift border border-hairline rounded-xl overflow-hidden bg-white/60">
+      ${s.image ? `<img src="${s.image}" class="w-full h-40 object-cover">` : ''}
+      <div class="p-6">
+        <div class="w-11 h-11 rounded-lg bg-ink text-bronze flex items-center justify-center mb-4">
+          <i class="fa-solid ${s.icon}"></i>
+        </div>
+        <span class="tag-chip inline-block text-[10px] font-bold px-2.5 py-1 rounded-full text-stone mb-2">${catLabel(s.category)}</span>
+        <h3 class="font-display text-lg mb-2">${s.title}</h3>
+        <p class="text-sm text-stone leading-relaxed mb-4">${s.desc}</p>
+        <button onclick="openRequestModal('${s.category}', ${s.id})" class="text-xs font-bold text-bronze-dark hover:underline">
+          <span data-term="service_request_btn">اطلب هذه الخدمة</span> <i class="fa-solid fa-arrow-left text-[10px]"></i>
+        </button>
       </div>
-      <span class="tag-chip inline-block text-[10px] font-bold px-2.5 py-1 rounded-full text-stone mb-2">${catLabel(s.category)}</span>
-      <h3 class="font-display text-lg mb-2">${s.title}</h3>
-      <p class="text-sm text-stone leading-relaxed mb-4">${s.desc}</p>
-      <button onclick="openRequestModal('${s.category}')" class="text-xs font-bold text-bronze-dark hover:underline">
-        <span data-term="service_request_btn">اطلب هذه الخدمة</span> <i class="fa-solid fa-arrow-left text-[10px]"></i>
-      </button>
     </div>`).join('');
 }
 function renderPublicSite(){ applyTerms(); renderCategoryFilters(); renderServicesGrid(); }
@@ -1030,7 +1049,7 @@ function verifyEmailCode(){
   }
 }
 
-function openRequestModal(prefillCategory){
+function openRequestModal(prefillCategory, serviceId){
   const select = document.getElementById('req-category');
   select.innerHTML = siteData.categories.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
   if(prefillCategory) select.value = prefillCategory;
@@ -1042,6 +1061,10 @@ function openRequestModal(prefillCategory){
   document.getElementById('req-attachments').value = '';
   resetEmailVerification();
   updateSpecificServiceOptions();
+  if(serviceId){
+    document.getElementById('req-specific-service').value = serviceId;
+    onSpecificServiceChange();
+  }
   openModal('request-modal');
 }
 // تعبّئ قائمة "تحديد خدمة معينة" حسب التصنيف المختار حالياً (خدمات ظاهرة فقط)
@@ -1052,12 +1075,26 @@ function updateSpecificServiceOptions(){
   sel.innerHTML = '<option value="">بدون تحديد خدمة معينة</option>' + matching.map(s => `<option value="${s.id}">${s.title}${s.price != null ? ' — ' + Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''}</option>`).join('');
   onSpecificServiceChange();
 }
-// تُظهر/تُخفي قسم الدفع اليدوي حسب وجود سعر للخدمة المختارة
+// تُظهر/تُخفي قسم الدفع اليدوي حسب وجود سعر للخدمة المختارة، وتعرض صورة الخدمة إن وجدت
 function onSpecificServiceChange(){
   const id = document.getElementById('req-specific-service').value;
   const section = document.getElementById('req-payment-section');
   const check = document.getElementById('req-payment-confirm');
+  const preview = document.getElementById('req-service-preview');
   const s = id ? siteData.services.find(x => x.id === parseInt(id)) : null;
+  if(s){
+    preview.innerHTML = `
+      ${s.image ? `<img src="${s.image}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-ink text-bronze flex items-center justify-center flex-shrink-0"><i class="fa-solid ${s.icon}"></i></div>`}
+      <div class="min-w-0">
+        <p class="text-[11px] text-stone">أنت تطلب:</p>
+        <p class="text-sm font-bold truncate">${s.title}</p>
+      </div>`;
+    preview.classList.remove('hidden');
+    preview.classList.add('flex');
+  } else {
+    preview.classList.add('hidden');
+    preview.classList.remove('flex');
+  }
   if(s && s.price != null){
     section.classList.remove('hidden');
     document.getElementById('req-payment-amount').textContent = Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ر.ع';
@@ -1284,7 +1321,11 @@ function overviewHTML(){
 function servicesAdminHTML(){
   const rows = siteData.services.map(s => `
     <tr class="border-b border-hairline last:border-0">
-      <td class="py-3 px-3"><i class="fa-solid ${s.icon} text-bronze"></i></td>
+      <td class="py-3 px-3">
+        ${s.image
+          ? `<img src="${s.image}" class="w-9 h-9 rounded-lg object-cover">`
+          : `<i class="fa-solid ${s.icon} text-bronze"></i>`}
+      </td>
       <td class="py-3 px-3 font-bold">${s.title}</td>
       <td class="py-3 px-3 text-xs">${catLabel(s.category)}</td>
       <td class="py-3 px-3 text-xs font-num">${s.price != null ? Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '<span class="text-stone">بدون سعر</span>'}</td>
@@ -2091,6 +2132,30 @@ async function deleteServiceIcon(key){
   renderDashContent();
   showToast('تم حذف الأيقونة');
 }
+function previewServiceImage(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size > 1.5 * 1024 * 1024){
+    showToast('حجم الصورة أكبر من 1.5 ميجابايت', 'error');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('svc-image-data').value = reader.result;
+    document.getElementById('svc-image-preview').src = reader.result;
+    document.getElementById('svc-image-preview').classList.remove('hidden');
+    document.getElementById('svc-image-placeholder').classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+function removeServiceImage(){
+  document.getElementById('svc-image-data').value = '';
+  document.getElementById('svc-image-file').value = '';
+  document.getElementById('svc-image-preview').src = '';
+  document.getElementById('svc-image-preview').classList.add('hidden');
+  document.getElementById('svc-image-placeholder').classList.remove('hidden');
+}
 function openServiceModal(){
   document.getElementById('service-modal-title').textContent = 'إضافة خدمة';
   document.getElementById('svc-id').value = '';
@@ -2100,6 +2165,7 @@ function openServiceModal(){
   document.getElementById('svc-desc').value = '';
   document.getElementById('svc-price').value = '';
   document.getElementById('svc-active').checked = true;
+  removeServiceImage();
   openModal('service-modal');
 }
 function editService(id){
@@ -2112,18 +2178,27 @@ function editService(id){
   document.getElementById('svc-desc').value = s.desc;
   document.getElementById('svc-price').value = (s.price != null) ? s.price : '';
   document.getElementById('svc-active').checked = s.active;
+  removeServiceImage();
+  if(s.image){
+    document.getElementById('svc-image-data').value = s.image;
+    document.getElementById('svc-image-preview').src = s.image;
+    document.getElementById('svc-image-preview').classList.remove('hidden');
+    document.getElementById('svc-image-placeholder').classList.add('hidden');
+  }
   openModal('service-modal');
 }
 async function saveService(e){
   e.preventDefault();
   const id = document.getElementById('svc-id').value;
   const priceRaw = document.getElementById('svc-price').value.trim();
+  const imageRaw = document.getElementById('svc-image-data').value;
   const data = {
     title: document.getElementById('svc-title').value.trim(),
     category: document.getElementById('svc-category').value,
     icon: document.getElementById('svc-icon').value,
     desc: document.getElementById('svc-desc').value.trim(),
     price: priceRaw === '' ? null : (parseFloat(priceRaw) || 0),
+    image: imageRaw || null,
     active: document.getElementById('svc-active').checked
   };
   if(id){
