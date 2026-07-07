@@ -319,6 +319,11 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
         <label class="block text-xs font-bold text-stone mb-1.5">الوصف</label>
         <textarea id="svc-desc" rows="3" required class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></textarea>
       </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">السعر (اختياري)</label>
+        <input id="svc-price" type="text" inputmode="decimal" oninput="restrictDigits(this, true)" placeholder="اتركه فارغاً إذا ما فيه سعر محدد" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+        <p class="text-[11px] text-stone mt-1.5">لو حددت سعر، الزبون بيحتاج يأكد التحويل قبل ما يقدر يرسل الطلب لهذي الخدمة</p>
+      </div>
       <label class="flex items-center gap-2 text-sm">
         <input type="checkbox" id="svc-active" checked class="w-4 h-4">
         عرض الخدمة في الموقع العام
@@ -676,7 +681,19 @@ input:focus, textarea:focus, select:focus{outline:none; box-shadow:0 0 0 2px var
       </div>
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_category_label">الخدمة المطلوبة</label>
-        <select id="req-category" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
+        <select id="req-category" onchange="updateSpecificServiceOptions()" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone mb-1.5">تحديد خدمة معينة (اختياري)</label>
+        <select id="req-specific-service" onchange="onSpecificServiceChange()" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5"></select>
+      </div>
+      <div id="req-payment-section" class="hidden bg-travertine-2 border border-hairline rounded-lg p-4 space-y-3">
+        <p class="text-sm font-bold">سعر هذه الخدمة: <span id="req-payment-amount" class="font-num text-bronze-dark"></span></p>
+        <div class="text-xs text-stone space-y-1" id="req-payment-instructions"></div>
+        <label class="flex items-start gap-2 text-xs font-bold pt-1">
+          <input type="checkbox" id="req-payment-confirm" class="w-4 h-4 mt-0.5">
+          <span>أؤكد أنني قمت بتحويل المبلغ كاملاً حسب البيانات أعلاه</span>
+        </label>
       </div>
       <div>
         <label class="block text-xs font-bold text-stone mb-1.5" data-term="request_message_label">تفاصيل الطلب</label>
@@ -788,7 +805,8 @@ const DEFAULT_EMPLOYEES = [
   {id:2, name:"موظف الاستوديو", jobTitle:"مصمم داخلي", username:"employee1", password:"12345", role:"employee", active:true, permissions:{requests:true, finance:false}}
 ];
 
-let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], serviceIcons:[...DEFAULT_SERVICE_ICONS], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], expenses:[], customSections:[] };
+const DEFAULT_PAYMENT_INFO = { bankName:'', accountHolder:'', iban:'', thawaniNumber:'', notes:'' };
+let siteData = { terms:{...DEFAULT_TERMS}, services:[...DEFAULT_SERVICES], categories:[...DEFAULT_CATEGORIES], serviceIcons:[...DEFAULT_SERVICE_ICONS], employees:[...DEFAULT_EMPLOYEES], requests:[], finance:[], expenses:[], customSections:[], paymentInfo:{...DEFAULT_PAYMENT_INFO} };
 let currentUser = null;
 let activeCategory = 'all';
 let activeDashTab = 'overview';
@@ -826,7 +844,8 @@ function mergeSiteData(parsed){
         ? [{ id:1, values:{ content: cs.content }, date:'' }]
         : [];
       return { ...cs, fields:[legacyField], items };
-    })
+    }),
+    paymentInfo: { ...DEFAULT_PAYMENT_INFO, ...(parsed.paymentInfo||{}) }
   };
 }
 async function loadData(){
@@ -1022,7 +1041,39 @@ function openRequestModal(prefillCategory){
   document.getElementById('req-message').value = '';
   document.getElementById('req-attachments').value = '';
   resetEmailVerification();
+  updateSpecificServiceOptions();
   openModal('request-modal');
+}
+// تعبّئ قائمة "تحديد خدمة معينة" حسب التصنيف المختار حالياً (خدمات ظاهرة فقط)
+function updateSpecificServiceOptions(){
+  const cat = document.getElementById('req-category').value;
+  const sel = document.getElementById('req-specific-service');
+  const matching = siteData.services.filter(s => s.active && s.category === cat);
+  sel.innerHTML = '<option value="">بدون تحديد خدمة معينة</option>' + matching.map(s => `<option value="${s.id}">${s.title}${s.price != null ? ' — ' + Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''}</option>`).join('');
+  onSpecificServiceChange();
+}
+// تُظهر/تُخفي قسم الدفع اليدوي حسب وجود سعر للخدمة المختارة
+function onSpecificServiceChange(){
+  const id = document.getElementById('req-specific-service').value;
+  const section = document.getElementById('req-payment-section');
+  const check = document.getElementById('req-payment-confirm');
+  const s = id ? siteData.services.find(x => x.id === parseInt(id)) : null;
+  if(s && s.price != null){
+    section.classList.remove('hidden');
+    document.getElementById('req-payment-amount').textContent = Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ر.ع';
+    const p = siteData.paymentInfo || {};
+    const lines = [];
+    if(p.bankName) lines.push(`<p><b>البنك:</b> ${p.bankName}</p>`);
+    if(p.accountHolder) lines.push(`<p><b>صاحب الحساب:</b> ${p.accountHolder}</p>`);
+    if(p.iban) lines.push(`<p><b>الآيبان:</b> <span class="font-num" dir="ltr">${p.iban}</span></p>`);
+    if(p.thawaniNumber) lines.push(`<p><b>ثواني:</b> <span class="font-num" dir="ltr">${p.thawaniNumber}</span></p>`);
+    if(p.notes) lines.push(`<p>${p.notes}</p>`);
+    document.getElementById('req-payment-instructions').innerHTML = lines.join('') || '<p>تواصل معنا لمعرفة طريقة الدفع.</p>';
+    check.checked = false;
+  } else {
+    section.classList.add('hidden');
+    check.checked = false;
+  }
 }
 // تقرأ ملف واحد وتحوّله إلى Data URL (نص) عشان نقدر نخزنه ضمن بيانات الطلب مباشرة
 function readFileAsDataURL(file){
@@ -1053,6 +1104,13 @@ async function submitRequest(e){
     showToast('لازم تتحقق من بريدك الإلكتروني عبر الرمز المرسل قبل إرسال الطلب', 'error');
     return;
   }
+  const specificServiceId = document.getElementById('req-specific-service').value;
+  const specificService = specificServiceId ? siteData.services.find(s=>s.id===parseInt(specificServiceId)) : null;
+  const hasPrice = specificService && specificService.price != null;
+  if(hasPrice && !document.getElementById('req-payment-confirm').checked){
+    showToast('لازم تأكد أنك حوّلت المبلغ قبل إرسال الطلب لهذه الخدمة', 'error');
+    return;
+  }
   let attachments = [];
   try{
     attachments = await collectAttachments();
@@ -1069,6 +1127,11 @@ async function submitRequest(e){
     phone: normalizePhone(),
     email: verifiedEmail,
     category: document.getElementById('req-category').value,
+    requestedServiceId: specificService ? specificService.id : null,
+    requestedServiceTitle: specificService ? specificService.title : null,
+    orderPrice: hasPrice ? specificService.price : null,
+    paymentClaimed: hasPrice,
+    paymentConfirmed: false,
     message: document.getElementById('req-message').value.trim(),
     attachments: attachments,
     date: dateStr,
@@ -1224,6 +1287,7 @@ function servicesAdminHTML(){
       <td class="py-3 px-3"><i class="fa-solid ${s.icon} text-bronze"></i></td>
       <td class="py-3 px-3 font-bold">${s.title}</td>
       <td class="py-3 px-3 text-xs">${catLabel(s.category)}</td>
+      <td class="py-3 px-3 text-xs font-num">${s.price != null ? Number(s.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '<span class="text-stone">بدون سعر</span>'}</td>
       <td class="py-3 px-3">
         <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${s.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}">
           ${s.active ? 'ظاهرة' : 'مخفية'}
@@ -1258,9 +1322,9 @@ function servicesAdminHTML(){
     <div class="bg-white border border-hairline rounded-xl overflow-x-auto scrollbar-thin">
       <table class="w-full text-sm">
         <thead class="bg-travertine-2 text-stone text-xs"><tr>
-          <th class="py-3 px-3 text-right">أيقونة</th><th class="py-3 px-3 text-right">الخدمة</th><th class="py-3 px-3 text-right">التصنيف</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
+          <th class="py-3 px-3 text-right">أيقونة</th><th class="py-3 px-3 text-right">الخدمة</th><th class="py-3 px-3 text-right">التصنيف</th><th class="py-3 px-3 text-right">السعر</th><th class="py-3 px-3 text-right">الحالة</th><th class="py-3 px-3"></th>
         </tr></thead>
-        <tbody>${rows || `<tr><td colspan="5" class="text-center py-8 text-stone">لا توجد خدمات مضافة بعد</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="6" class="text-center py-8 text-stone">لا توجد خدمات مضافة بعد</td></tr>`}</tbody>
       </table>
     </div>`;
 }
@@ -1386,6 +1450,15 @@ function requestsAdminHTML(){
         </td>
         <td class="py-3 px-3 text-xs font-num text-stone whitespace-nowrap">${r.date}</td>
         <td class="py-3 px-3 whitespace-nowrap">
+          ${r.orderPrice != null ? `
+            <div class="mb-2 pb-2 border-b border-hairline">
+              <p class="text-[10px] text-stone">خدمة محددة: ${r.requestedServiceTitle||''}</p>
+              <p class="font-num font-bold text-emerald-700">${fmtMoney(r.orderPrice)}</p>
+              ${r.paymentConfirmed
+                ? `<p class="text-[10px] font-bold text-emerald-700">✅ الدفع مؤكد</p>`
+                : `<p class="text-[10px] font-bold text-amber-600">⏳ بانتظار تأكيد الدفع</p>
+                   ${canSetPrice ? `<button onclick="confirmPaymentReceived(${r.id})" class="text-[10px] text-bronze-dark underline mt-0.5">تأكيد الاستلام</button>` : ''}`}
+            </div>` : ''}
           ${r.price != null ? `
             <p class="font-num font-bold">${fmtMoney(r.price)}</p>
             <p class="text-[10px] text-stone">بواسطة ${r.pricedBy || '—'}</p>
@@ -1471,19 +1544,15 @@ function openPriceModal(id){
   document.getElementById('price-modal-title').textContent = r.price != null ? 'تعديل سعر الطلب' : 'تحديد سعر الطلب';
   openModal('price-modal');
 }
-async function savePriceEntry(e){
-  e.preventDefault();
-  if(!hasPermission(currentUser, 'finance')){ showToast('تحتاج صلاحية الإدارة المالية لتحديد سعر الطلبات', 'error'); return; }
-  const id = parseInt(document.getElementById('price-req-id').value);
-  const amount = parseFloat(document.getElementById('price-amount').value) || 0;
-  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+// دالة مشتركة: تسجّل سعر الطلب وتُنشئ/تُحدّث قيداً مالياً مرتبطاً به تلقائياً
+function linkRequestPriceToFinance(r, amount, note){
   const now = new Date();
   const dateStr = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,'0')+"-"+String(now.getDate()).padStart(2,'0');
   r.price = amount;
   r.pricedBy = currentUser.name;
   r.pricedAt = dateStr;
   const entryTitle = `طلب عميل: ${r.name} — ${catLabel(r.category)}`;
-  const entryNotes = `تم تحديد السعر من تبويب الطلبات بواسطة ${currentUser.name}`;
+  const entryNotes = note || `تم تحديد السعر من تبويب الطلبات بواسطة ${currentUser.name}`;
   let entry = r.financeEntryId ? siteData.finance.find(f=>f.id===r.financeEntryId) : null;
   if(entry){
     entry.title = entryTitle;
@@ -1494,10 +1563,29 @@ async function savePriceEntry(e){
     siteData.finance.push({ id:newId, title:entryTitle, cost:0, paid:amount, notes:entryNotes, date:dateStr, requestId:r.id });
     r.financeEntryId = newId;
   }
+}
+async function savePriceEntry(e){
+  e.preventDefault();
+  if(!hasPermission(currentUser, 'finance')){ showToast('تحتاج صلاحية الإدارة المالية لتحديد سعر الطلبات', 'error'); return; }
+  const id = parseInt(document.getElementById('price-req-id').value);
+  const amount = parseFloat(document.getElementById('price-amount').value) || 0;
+  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+  linkRequestPriceToFinance(r, amount);
   await saveData();
   closeModal('price-modal');
   renderDashContent();
   showToast('تم حفظ سعر الطلب، وانضاف تلقائياً كدخل في الإدارة المالية');
+}
+async function confirmPaymentReceived(id){
+  if(!hasPermission(currentUser, 'finance')){ showToast('تحتاج صلاحية الإدارة المالية لتأكيد استلام الدفع', 'error'); return; }
+  const r = siteData.requests.find(x=>x.id===id); if(!r) return;
+  if(!confirm('هل تأكدت فعلياً من استلام المبلغ في حسابك؟ سيُسجَّل كدخل في الإدارة المالية.')) return;
+  const amount = r.orderPrice || 0;
+  linkRequestPriceToFinance(r, amount, `تحويل مؤكد من العميل لخدمة "${r.requestedServiceTitle||''}" — تأكيد بواسطة ${currentUser.name}`);
+  r.paymentConfirmed = true;
+  await saveData();
+  renderDashContent();
+  showToast('تم تأكيد استلام الدفع وتسجيله في الإدارة المالية');
 }
 
 // ---------- الإدارة المالية (حسب الصلاحية) ----------
@@ -1573,7 +1661,58 @@ function financeAdminHTML(){
         </tr></thead>
         <tbody>${expenseRows || `<tr><td colspan="5" class="text-center py-8 text-stone">لا توجد مصاريف مضافة بعد</td></tr>`}</tbody>
       </table>
+    </div>
+    <div class="mt-8">
+      <h3 class="font-display text-base mb-3">إعدادات الدفع اليدوي</h3>
+      <div class="bg-white border border-hairline rounded-xl p-5">
+        <p class="text-xs text-stone mb-4 leading-relaxed">هذي البيانات تظهر للعميل عند تقديم طلب لخدمة محددة لها سعر، عشان يحوّل المبلغ يدوياً قبل إرسال الطلب.</p>
+        ${currentUser.role==='admin' ? `
+        <form onsubmit="savePaymentInfo(event)" class="space-y-3">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone mb-1.5">اسم البنك</label>
+              <input id="pay-bank-name" value="${siteData.paymentInfo.bankName||''}" placeholder="مثال: بنك مسقط" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone mb-1.5">اسم صاحب الحساب</label>
+              <input id="pay-account-holder" value="${siteData.paymentInfo.accountHolder||''}" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone mb-1.5">رقم الآيبان (IBAN)</label>
+              <input id="pay-iban" value="${siteData.paymentInfo.iban||''}" dir="ltr" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone mb-1.5">رقم ثواني الشخصي (اختياري)</label>
+              <input id="pay-thawani" value="${siteData.paymentInfo.thawaniNumber||''}" dir="ltr" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5 font-num">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone mb-1.5">ملاحظات إضافية تظهر للعميل (اختياري)</label>
+            <textarea id="pay-notes" rows="2" class="w-full text-sm border border-hairline rounded-lg px-3 py-2.5">${siteData.paymentInfo.notes||''}</textarea>
+          </div>
+          <button type="submit" class="bg-bronze text-ink font-bold text-sm px-6 py-2.5 rounded-lg">حفظ إعدادات الدفع</button>
+        </form>` : `
+        <div class="text-sm space-y-1.5">
+          <p><b>البنك:</b> ${siteData.paymentInfo.bankName || '—'}</p>
+          <p><b>صاحب الحساب:</b> ${siteData.paymentInfo.accountHolder || '—'}</p>
+          <p><b>الآيبان:</b> <span class="font-num" dir="ltr">${siteData.paymentInfo.iban || '—'}</span></p>
+          <p><b>ثواني:</b> <span class="font-num" dir="ltr">${siteData.paymentInfo.thawaniNumber || '—'}</span></p>
+          <p class="text-stone text-xs mt-2">تعديل هذي البيانات متاح لمدير النظام فقط.</p>
+        </div>`}
+      </div>
     </div>`;
+}
+async function savePaymentInfo(e){
+  e.preventDefault();
+  siteData.paymentInfo = {
+    bankName: document.getElementById('pay-bank-name').value.trim(),
+    accountHolder: document.getElementById('pay-account-holder').value.trim(),
+    iban: document.getElementById('pay-iban').value.trim(),
+    thawaniNumber: document.getElementById('pay-thawani').value.trim(),
+    notes: document.getElementById('pay-notes').value.trim()
+  };
+  await saveData();
+  showToast('تم حفظ إعدادات الدفع بنجاح');
 }
 function openExpenseModal(){
   document.getElementById('expense-modal-title').textContent = 'إضافة مصروف';
@@ -1959,6 +2098,7 @@ function openServiceModal(){
   renderServiceCategoryOptions(siteData.categories[0] ? siteData.categories[0].key : '');
   renderServiceIconOptions(siteData.serviceIcons[0] ? siteData.serviceIcons[0].key : '');
   document.getElementById('svc-desc').value = '';
+  document.getElementById('svc-price').value = '';
   document.getElementById('svc-active').checked = true;
   openModal('service-modal');
 }
@@ -1970,17 +2110,20 @@ function editService(id){
   renderServiceCategoryOptions(s.category);
   renderServiceIconOptions(s.icon);
   document.getElementById('svc-desc').value = s.desc;
+  document.getElementById('svc-price').value = (s.price != null) ? s.price : '';
   document.getElementById('svc-active').checked = s.active;
   openModal('service-modal');
 }
 async function saveService(e){
   e.preventDefault();
   const id = document.getElementById('svc-id').value;
+  const priceRaw = document.getElementById('svc-price').value.trim();
   const data = {
     title: document.getElementById('svc-title').value.trim(),
     category: document.getElementById('svc-category').value,
     icon: document.getElementById('svc-icon').value,
     desc: document.getElementById('svc-desc').value.trim(),
+    price: priceRaw === '' ? null : (parseFloat(priceRaw) || 0),
     active: document.getElementById('svc-active').checked
   };
   if(id){
